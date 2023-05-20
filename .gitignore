@@ -1,0 +1,8 @@
+/target
+/mom.private.yml
+/mom.private.yaml
+/target_cov
+/target_ci
+/.idea
+/.vscode
+.DS_Store

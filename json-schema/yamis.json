@@ -1,0 +1,226 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "YAML Schema for mom, a task runner for teams and individuals",
+    "description": "mom is a task runner for teams and individuals.",
+    "type": "object",
+    "additionalProperties": false,
+    "$defs": {
+        "v2": {
+            "env": {
+                "description": "Environment variables to set when running a task",
+                "type": "object",
+                "additionalProperties": {
+                    "type": "string"
+                }
+            },
+            "vars": {
+                "description": "Variables that can be accessed from the task",
+                "type": "object"
+            },
+            "dotenv": {
+                "description": "File or files to load environment variables from",
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            },
+            "wd": {
+                "description": "The working directory when running a task",
+                "type": "string"
+            },
+            "templates": {
+                "description": "Templates that can be used by the Tera template engine.",
+                "type": "object",
+                "additionalProperties": {
+                    "type": "string"
+                }
+            },
+            "args": {
+                "description": "The arguments to pass to the program",
+                "type": "string"
+            },
+            "args_extend": {
+                "description": "Extends the arguments inherited",
+                "type": "string"
+            },
+            "cmd_task": {
+                "description": "A subtask to run",
+                "type": "object",
+                "properties": {
+                    "task": {
+                        "$ref": "#/$defs/v2/task"
+                    }
+                }
+            },
+            "cmd_task_name": {
+                "description": "A subtask to run by name",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "task": {
+                        "type": "string"
+                    }
+                }
+            },
+            "task": {
+                "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "help": {
+                            "description": "Help for the task",
+                            "type": "string"
+                        },
+                        "templates": {
+                            "$ref": "#/$defs/v2/templates"
+                        },
+                        "script": {
+                            "description": "The script to run for the task",
+                            "type": "string"
+                        },
+                        "script_runner": {
+                            "description": "The script runner to use for the task. Must include a {{ script_path }} tag",
+                            "type": "string"
+                        },
+                        "script_ext": {
+                            "description": "The extension to use for the script",
+                            "type": "string"
+                        },
+                        "program": {
+                            "description": "The program to run for the task",
+                            "type": "string"
+                        },
+                        "args": {
+                            "$ref": "#/$defs/v2/args"
+                        },
+                        "args_extend": {
+                            "$ref": "#/$defs/v2/args_extend"
+                        },
+                        "args+": {
+                            "$ref": "#/$defs/v2/args"
+                        },
+                        "cmds": {
+                            "description": "List of commands to run",
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/v2/cmd_task"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/v2/cmd_task_name"
+                                    }
+                                ]
+                            }
+                        },
+                        "env": {
+                            "$ref": "#/$defs/v2/env"
+                        },
+                        "dotenv": {
+                            "$ref": "#/$defs/v2/dotenv"
+                        },
+                        "vars": {
+                            "$ref": "#/$defs/v2/vars"
+                        },
+                        "wd": {
+                            "$ref": "#/$defs/v2/wd"
+                        },
+                        "linux": {
+                            "description": "Task to run on Linux",
+                            "$ref": "#/$defs/v2/task"
+                        },
+                        "windows": {
+                            "description": "Task to run on Windows",
+                            "$ref": "#/$defs/v2/task"
+                        },
+                        "macos": {
+                            "description": "Task to run on MacOS",
+                            "$ref": "#/$defs/v2/task"
+                        },
+                        "extend": {
+                            "description": "The tasks that this task inherits from",
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            ]
+                        },
+                        "private": {
+                            "description": "Whether the task is private",
+                            "type": "boolean"
+                        }
+                    }
+            },
+            "mom_file_tasks": {
+                "description": "Task configuration",
+                "type": "object",
+                "additionalProperties": {
+                    "$ref": "#/$defs/v2/task"
+                }
+            }
+        }
+    },
+    "properties": {
+        "version": {
+            "description": "Specifies the file format version",
+            "anyOf": [
+                {
+                    "type": "number",
+                    "enum": [1]
+                },
+                {
+                    "type": "string",
+                    "enum": ["1"]
+                }
+            ]
+        },
+        "extend": {
+            "description": "The mom files that this file inherits from",
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "templates": {
+            "$ref": "#/$defs/v2/templates"
+        },
+        "wd": {
+            "$ref": "#/$defs/v2/wd"
+        },
+        "env": {
+            "$ref": "#/$defs/v2/env"
+        },
+        "dotenv": {
+            "$ref": "#/$defs/v2/dotenv"
+        },
+        "vars": {
+            "$ref": "#/$defs/v2/vars"
+        },
+        "tasks": {
+            "$ref": "#/$defs/v2/mom_file_tasks"
+        }
+    },
+    "required": ["version"]
+}
