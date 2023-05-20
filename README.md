@@ -1,7 +1,7 @@
 # mom
 ![build](https://github.com/adrianmrit/mom/actions/workflows/test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/adrianmrit/mom/branch/main/graph/badge.svg?token=3BBJFNNJPT)](https://codecov.io/gh/adrianmrit/mom)
-![License: GPL v3](https://img.shields.io/github/license/adrianmrit/mom)
+![License: MIT](https://img.shields.io/github/license/adrianmrit/mom)
 
 > Task runner for teams and individuals. Written in [Rust](https://www.rust-lang.org/).
 
