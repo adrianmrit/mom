@@ -89,10 +89,10 @@ vars:
 tasks:
   hi:
     cmds:
-      - echo {{ greeting }}
+      - echo {{ vars.greeting }}
   
   hi.windows:
-    script: echo {{ greeting }} from Windows
+    script: echo {{ vars.greeting }} from Windows
   
   sum:
     cmds:
@@ -225,7 +225,7 @@ And then use it in a task like this:
 ```yaml
 tasks:
   say_hi:
-    cmd: echo "Hi, {{ user.name }}!"
+    cmd: echo "Hi, {{ vars.user.name }}!"
 ```
 
 
