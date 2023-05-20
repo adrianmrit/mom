@@ -2,7 +2,7 @@
 name = "mom"
 version = "1.0.0"
 edition = "2021"
-license = "GPL-3.0-only"
+license = "MIT"
 authors = ["Adrian Martinez <adrianmrit@gmail.com>"]
 description = "Task runner for teams and individuals."
 homepage = "https://github.com/adrianmrit/mom/"
