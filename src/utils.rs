@@ -84,9 +84,9 @@ pub(crate) fn get_task_dependency_graph<'a>(
     for (task_name, task) in tasks {
         // The dependency graph must contain all nodes, even if they do not have any relations.
         // So that we can use the graph to traverse the tasks in the correct order.
-        graph.add_node(&task_name);
+        graph.add_node(task_name);
         for base_name in task.get_dependencies() {
-            let os_base_name = to_os_task_name(&base_name);
+            let os_base_name = to_os_task_name(base_name);
             if let Some((key, _)) = tasks.get_key_value(&os_base_name) {
                 graph.add_edge(task_name, key, ());
             } else if let Some((key, _)) = tasks.get_key_value(base_name) {

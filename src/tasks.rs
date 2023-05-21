@@ -240,7 +240,7 @@ pub(crate) struct Task {
 impl Task {
     /// Returns the dependencies of the task.
     pub(crate) fn get_dependencies(&self) -> Vec<&str> {
-        let mut dependencies: Vec<&str> =self.common.extend.iter().collect();
+        let mut dependencies: Vec<&str> = self.common.extend.iter().collect();
 
         if let Some(cmds) = &self.cmds {
             for cmd in cmds {

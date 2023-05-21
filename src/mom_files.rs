@@ -329,17 +329,17 @@ impl MomFile {
         let mut tasks = conf.get_flat_tasks()?;
 
         let dep_graph = get_task_dependency_graph(&tasks)?;
-        
+
         // TODO: Return the cycle. Could use petgraph::visit::DfsPostOrder instead of toposort
         let dependencies = toposort(&dep_graph, None);
-        
+
         let dependencies = match dependencies {
             Ok(dependencies) => dependencies,
             Err(e) => {
                 return Err(format!("Found a cyclic dependency for task: {}", e.node_id()).into());
             }
         };
-        
+
         let dependencies: Vec<String> = dependencies
             .iter()
             .rev()
@@ -349,24 +349,27 @@ impl MomFile {
         for dependency_name in dependencies {
             // temp remove because of rules of references
             let mut task = tasks.remove(&dependency_name).unwrap();
-            
+
             // We don't need the bases anymore, but we want to keep them in case the user wants to
             // access them from the context in Tera. However we need to remove temporarily because
             // of the rules of references.
             let bases = std::mem::take(&mut task.common.extend);
-            
+
             // Extend from the bases. Because of the topological sort, the bases should already be
             // loaded.
             for base in bases.iter() {
                 let os_task_name = format!("{}.{}", &base, env::consts::OS);
                 // The base task must exist, otherwise it would have failed when creating the dependency graph
-                let base_task = conf.tasks.get(&os_task_name).unwrap_or_else(|| conf.tasks.get(base).unwrap());
+                let base_task = conf
+                    .tasks
+                    .get(&os_task_name)
+                    .unwrap_or_else(|| conf.tasks.get(base).unwrap());
                 task.extend(base_task);
             }
 
             // Store the dependencies back in the tasks
             task.common.extend = bases;
-            
+
             // insert modified task back in
             conf.tasks.insert(dependency_name, task);
         }
