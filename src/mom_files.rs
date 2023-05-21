@@ -329,14 +329,17 @@ impl MomFile {
         let mut tasks = conf.get_flat_tasks()?;
 
         let dep_graph = get_task_dependency_graph(&tasks)?;
+        
         // TODO: Return the cycle. Could use petgraph::visit::DfsPostOrder instead of toposort
         let dependencies = toposort(&dep_graph, None);
+        
         let dependencies = match dependencies {
             Ok(dependencies) => dependencies,
             Err(e) => {
                 return Err(format!("Found a cyclic dependency for task: {}", e.node_id()).into());
             }
         };
+        
         let dependencies: Vec<String> = dependencies
             .iter()
             .rev()
@@ -346,30 +349,26 @@ impl MomFile {
         for dependency_name in dependencies {
             // temp remove because of rules of references
             let mut task = tasks.remove(&dependency_name).unwrap();
-            // task.bases should be empty for the first item in the iteration
-            // we no longer need the bases
+            
+            // We don't need the bases anymore, but we want to keep them in case the user wants to
+            // access them from the context in Tera. However we need to remove temporarily because
+            // of the rules of references.
             let bases = std::mem::take(&mut task.common.extend);
+            
+            // Extend from the bases. Because of the topological sort, the bases should already be
+            // loaded.
             for base in bases.iter() {
                 let os_task_name = format!("{}.{}", &base, env::consts::OS);
-                if let Some(base_task) = conf.tasks.get(&os_task_name) {
-                    task.extend(base_task);
-                } else if let Some(base_task) = conf.tasks.get(base) {
-                    task.extend(base_task);
-                } else {
-                    return Err(format!(
-                        "Task {} cannot inherit from non-existing task {}.",
-                        &dependency_name, &base
-                    )
-                    .into());
-                }
+                // The base task must exist, otherwise it would have failed when creating the dependency graph
+                let base_task = conf.tasks.get(&os_task_name).unwrap_or_else(|| conf.tasks.get(base).unwrap());
+                task.extend(base_task);
             }
+
+            // Store the dependencies back in the tasks
+            task.common.extend = bases;
+            
             // insert modified task back in
             conf.tasks.insert(dependency_name, task);
-        }
-
-        // Store the other tasks left
-        for (task_name, task) in tasks {
-            conf.tasks.insert(task_name, task);
         }
         Ok(conf)
     }

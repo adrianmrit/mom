@@ -89,7 +89,7 @@ pub(crate) fn get_task_dependency_graph<'a>(
             let os_base_name = to_os_task_name(&base_name);
             if let Some((key, _)) = tasks.get_key_value(&os_base_name) {
                 graph.add_edge(task_name, key, ());
-            } else if let Some((key, _)) = tasks.get_key_value(&base_name) {
+            } else if let Some((key, _)) = tasks.get_key_value(base_name) {
                 graph.add_edge(task_name, key, ());
             } else {
                 return Err(format!(
