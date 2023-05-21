@@ -48,9 +48,9 @@ tasks:
     )
     .unwrap();
 
-    let mom_file = MomFile::load(mom_file_path).unwrap();
+    let mom_file = MomFile::from_path(mom_file_path).unwrap();
 
-    let task = mom_file.get_task("hello").unwrap();
+    let task = mom_file.clone_task("hello").unwrap();
 
     let expected = HashMap::from([
         ("greeting".to_string(), "hello world".to_string()),
@@ -88,12 +88,12 @@ fn test_args_inheritance() {
     )
     .unwrap();
 
-    let mom_file = MomFile::load(mom_file_path).unwrap();
+    let mom_file = MomFile::from_path(mom_file_path).unwrap();
 
-    let task = mom_file.get_task("hello").unwrap();
+    let task = mom_file.clone_task("hello").unwrap();
     assert_eq!(task.args.as_ref().unwrap(), "-c echo hello");
 
-    let task = mom_file.get_task("hello_2").unwrap();
+    let task = mom_file.clone_task("hello_2").unwrap();
     assert_eq!(task.args.as_ref().unwrap(), &"-c \"echo hello\"");
 }
 
@@ -135,21 +135,21 @@ tasks:
     )
     .unwrap();
 
-    let mom_file = MomFile::load(mom_file_path).unwrap();
+    let mom_file = MomFile::from_path(mom_file_path).unwrap();
 
-    let task = mom_file.get_task("base").unwrap();
+    let task = mom_file.clone_task("base").unwrap();
     assert_eq!(task.get_help(), "New lines should be trimmed");
 
-    let task = mom_file.get_task("help_inherited").unwrap();
+    let task = mom_file.clone_task("help_inherited").unwrap();
     assert_eq!(task.get_help(), "New lines should be trimmed");
 
-    let task = mom_file.get_task("no_help").unwrap();
+    let task = mom_file.clone_task("no_help").unwrap();
     assert_eq!(task.get_help(), "");
 
-    let task = mom_file.get_task("help_removed").unwrap();
+    let task = mom_file.clone_task("help_removed").unwrap();
     assert_eq!(task.get_help(), "");
 
-    let task = mom_file.get_task("help_overriden").unwrap();
+    let task = mom_file.clone_task("help_overriden").unwrap();
     assert_eq!(task.get_help(), "First line\nSecond line");
 }
 
@@ -211,9 +211,9 @@ tasks:
         )
         .unwrap();
 
-    let mom_file = MomFile::load(project_config_path).unwrap();
+    let mom_file = MomFile::from_path(project_config_path).unwrap();
 
-    let task = mom_file.get_task("test").unwrap();
+    let task = mom_file.clone_task("test").unwrap();
     let env = task.get_env(&mom_file.common.env);
 
     let expected = HashMap::from([
@@ -223,7 +223,7 @@ tasks:
     ]);
     assert_eq!(env, expected);
 
-    let task = mom_file.get_task("test_2").unwrap();
+    let task = mom_file.clone_task("test_2").unwrap();
     let env = task.get_env(&mom_file.common.env);
     let expected = HashMap::from([
         ("VAR1".to_string(), "TASK_VAL1".to_string()),

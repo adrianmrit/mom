@@ -4,275 +4,15 @@ use std::fs::File;
 use std::io::Write;
 
 #[test]
-fn test_discovery() {
-    let tmp_dir = TempDir::new().unwrap();
-    let project_config_path = tmp_dir.path().join("mom.root.yml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    hello_project:
-        script: "echo hello project"
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let config_path = tmp_dir.path().join("mom.yaml");
-    let mut mom_file = File::create(config_path.as_path()).unwrap();
-    mom_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    hello:
-        script: echo hello
-"#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let inner_dir = tmp_dir.path().join("inner");
-    std::fs::create_dir(&inner_dir).unwrap();
-    let mut inner_mom_file = File::create(inner_dir.join("mom.yml").as_path()).unwrap();
-    inner_mom_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    hello_inner:
-        script: echo hello inner
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let local_config_path = tmp_dir.path().join("mom.private.yaml");
-    let mut local_file = File::create(local_config_path.as_path()).unwrap();
-    local_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    hello_local:
-        script: echo hello local
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mut mom_files = MomFilesContainer::new();
-    let mut paths: Box<MomFilePaths> = MomFilePaths::new(&inner_dir);
-    let inner_path = paths.next().unwrap();
-    let local_path = paths.next().unwrap();
-    let regular_path = paths.next().unwrap();
-    let project_path = paths.next().unwrap();
-
-    assert!(paths.next().is_none());
-
-    mom_files.read_mom_file(inner_path).unwrap();
-    mom_files.read_mom_file(local_path).unwrap();
-    mom_files.read_mom_file(regular_path).unwrap();
-    mom_files.read_mom_file(project_path).unwrap();
-
-    assert!(!mom_files.has_task("non_existent"));
-    assert!(mom_files.has_task("hello_inner"));
-    assert!(mom_files.has_task("hello_project"));
-    assert!(mom_files.has_task("hello"));
-    assert!(mom_files.has_task("hello_local"));
-}
-
-#[test]
-fn test_extend() {
-    let tmp_dir = TempDir::new().unwrap();
-    let source_mom_file = tmp_dir.path().join("mom.source.yml");
-    let mut source_mom_file = File::create(source_mom_file.as_path()).unwrap();
-    source_mom_file
-        .write_all(
-            r#"
-    version: 1
-
-    env:
-        EVAR1: ROOT_EVAL1
-        EVAR2: ROOT_EVAL2
-    
-    vars:
-        VAR1: ROOT_VAL1
-        VAR2: ROOT_VAL2
-
-    tasks:
-        t1:
-            script: "echo hello t1"
-        t2:
-            script: "echo hello t2"
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let target_mom_file_path = tmp_dir.path().join("mom.target.yml");
-    let mut target_mom_file = File::create(target_mom_file_path.as_path()).unwrap();
-    target_mom_file
-        .write_all(
-            r#"
-    version: 1
-
-    extend: mom.source.yml
-
-    env:
-        EVAR1: ROOT_EVAL1.1
-        EVAR3: ROOT_EVAL3
-    
-    vars:
-        VAR1: ROOT_VAL1.1
-        VAR3: ROOT_VAL3
-    
-    tasks:
-        t1:
-            script: "echo hello t1.1"
-        t3:
-            script: "echo hello t3"
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mut mom_files = MomFilesContainer::new();
-
-    let config_file = mom_files.read_mom_file(target_mom_file_path).unwrap();
-    let config_file = config_file.lock().unwrap();
-    let task_names = config_file.get_public_task_names();
-    assert_eq!(task_names.len(), 3);
-    assert!(task_names.contains(&"t1"));
-    assert!(task_names.contains(&"t2"));
-    assert!(task_names.contains(&"t3"));
-
-    let task = config_file.get_task("t1").unwrap();
-    assert_eq!(task.script().unwrap(), "echo hello t1.1");
-
-    let env = &config_file.common.env;
-    assert_eq!(env.get("EVAR1").unwrap(), "ROOT_EVAL1.1");
-    assert_eq!(env.get("EVAR2").unwrap(), "ROOT_EVAL2");
-    assert_eq!(env.get("EVAR3").unwrap(), "ROOT_EVAL3");
-
-    let vars = &config_file.common.vars;
-    assert_eq!(vars.get("VAR1").unwrap(), "ROOT_VAL1.1");
-    assert_eq!(vars.get("VAR2").unwrap(), "ROOT_VAL2");
-    assert_eq!(vars.get("VAR3").unwrap(), "ROOT_VAL3");
-}
-
-#[test]
-fn test_extend_cyclic_dependency() {
-    let tmp_dir = TempDir::new().unwrap();
-    let source_mom_file = tmp_dir.path().join("mom.source.yml");
-    let mut source_mom_file = File::create(source_mom_file.as_path()).unwrap();
-    source_mom_file
-        .write_all(
-            r#"
-    version: 1
-
-    extend: mom.target.yml
-
-    tasks:
-        t1:
-            script: "echo hello t1"
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let target_mom_file_path = tmp_dir.path().join("mom.target.yml");
-    let mut target_mom_file = File::create(target_mom_file_path.as_path()).unwrap();
-    target_mom_file
-        .write_all(
-            r#"
-    version: 1
-
-    extend: mom.source.yml
-
-    tasks:
-        t1:
-            script: "echo hello t1.1"
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mut mom_files = MomFilesContainer::new();
-
-    let config_file = mom_files.read_mom_file(target_mom_file_path);
-    assert!(config_file.is_err());
-
-    let err = config_file.err().unwrap();
-    assert!(err
-        .to_string()
-        .starts_with("Found a cyclic dependency for mom file: "));
-}
-
-#[test]
-fn test_discovery_given_file() {
-    let tmp_dir = TempDir::new().unwrap();
-    let sample_mom_file_path = tmp_dir.path().join("sample.mom.yml");
-    let mut sample_mom_file = File::create(sample_mom_file_path.as_path()).unwrap();
-    sample_mom_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    hello_project:
-        script: echo hello project
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mut mom_files = MomFilesContainer::new();
-    let mut paths = SingleMomFilePath::new(&sample_mom_file_path);
-    let sample_path = paths.next().unwrap();
-    assert!(paths.next().is_none());
-
-    mom_files.read_mom_file(sample_path).unwrap();
-
-    assert!(mom_files.has_task("hello_project"));
-}
-
-#[test]
 fn test_mom_file_invalid_path() {
-    let cnfg = MomFile::extract(Path::new("non_existent"));
+    let cnfg = MomFile::deserialize_from_path(Path::new("non_existent"));
     assert!(cnfg.is_err());
 
-    let cnfg = MomFile::extract(Path::new("non_existent.ext"));
+    let cnfg = MomFile::deserialize_from_path(Path::new("non_existent.ext"));
     assert!(cnfg.is_err());
 
-    let cnfg = MomFile::extract(Path::new("non_existent.yml"));
+    let cnfg = MomFile::deserialize_from_path(Path::new("non_existent.yml"));
     assert!(cnfg.is_err());
-}
-
-#[test]
-fn test_container_read_config_error() {
-    let tmp_dir = TempDir::new().unwrap();
-    let project_config_path = tmp_dir.path().join("mom.root.yml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
-    some invalid condig
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mut mom_files = MomFilesContainer::default();
-    let result = mom_files.read_mom_file(project_config_path);
-
-    assert!(result.is_err());
 }
 
 #[test]
@@ -307,7 +47,7 @@ tasks:
             .as_bytes(),
         )
         .unwrap();
-    let mom_file = MomFile::load(project_config_path).unwrap();
+    let mom_file = MomFile::from_path(project_config_path).unwrap();
     assert!(mom_file.has_task("hello_local"));
     assert_eq!(
         mom_file.common.env.get("VALUE_OVERRIDE").unwrap(),
@@ -318,29 +58,22 @@ tasks:
 
 #[test]
 fn test_mom_file_flatten_task() {
-    let tmp_dir = TempDir::new().unwrap();
-
-    let project_config_path = tmp_dir.path().join("mom.root.yaml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
-version: 1
-
-tasks:
-    test:
-        script: echo hello
-        windows:
-            script: echo hello windows
-        macos:
-            script: echo hello macos
-        linux:
-            script: echo hello linux
-"#
-            .as_bytes(),
-        )
-        .unwrap();
-    let mom_file = MomFile::load(project_config_path).unwrap();
+    let mom_file = MomFile::from_str(
+        r#"
+    version: 1
+    
+    tasks:
+        test:
+            script: echo hello
+            windows:
+                script: echo hello windows
+            macos:
+                script: echo hello macos
+            linux:
+                script: echo hello linux
+    "#,
+    )
+    .unwrap();
 
     let task = mom_file.tasks.get("test");
     assert!(task.is_some());
@@ -357,94 +90,75 @@ tasks:
 
 #[test]
 fn test_mom_file_get_task() {
-    let tmp_dir = TempDir::new().unwrap();
-
-    let project_config_path = tmp_dir.path().join("mom.root.yaml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
+    let mom_file = MomFile::from_str(
+        r#"
 version: 1
 
 tasks:
-  task_1:
-    script: echo hello
+    task_1:
+        script: echo hello
 
-  task_2:
-    script: echo hello again
+    task_2:
+        script: echo hello again
 
-  task_3:
-    script: echo hello again
-    private: true
+    task_3:
+        script: echo hello again
+        private: true
 
-        "#
-            .as_bytes(),
-        )
-        .unwrap();
-    let mom_file = MomFile::load(project_config_path).unwrap();
+"#,
+    )
+    .unwrap();
 
-    let task_nam = mom_file.get_task("task_1");
+    let task_nam = mom_file.clone_task("task_1");
     assert!(task_nam.is_some());
     assert_eq!(task_nam.unwrap().get_name(), "task_1");
 
-    let task_nam = mom_file.get_task("task_2");
+    let task_nam = mom_file.clone_task("task_2");
     assert!(task_nam.is_some());
     assert_eq!(task_nam.unwrap().get_name(), "task_2");
 
-    let task_nam = mom_file.get_task("task_3");
+    let task_nam = mom_file.clone_task("task_3");
     assert!(task_nam.is_some());
     assert_eq!(task_nam.unwrap().get_name(), "task_3");
 }
 
 #[test]
 fn test_mom_file_get_non_private_task() {
-    let tmp_dir = TempDir::new().unwrap();
-
-    let project_config_path = tmp_dir.path().join("mom.root.yaml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
+    let mom_file = MomFile::from_str(
+        r#"
 version: 1
-
+    
 tasks:
-  task_1:
-    script: echo hello
+    task_1:
+        script: echo hello
+    
+    task_2:
+        script: echo hello again
 
-  task_2:
-    script: echo hello again
+    task_3:
+        script: echo hello again
+        private: true
 
-  task_3:
-    script: echo hello again
-    private: true
+"#,
+    )
+    .unwrap();
 
-        "#
-            .as_bytes(),
-        )
-        .unwrap();
-    let mom_file = MomFile::load(project_config_path).unwrap();
-
-    let task_nam = mom_file.get_public_task("task_1");
+    let task_nam = mom_file.clone_public_task("task_1");
     assert!(task_nam.is_some());
     assert_eq!(task_nam.unwrap().get_name(), "task_1");
 
-    let task_nam = mom_file.get_public_task("task_2");
+    let task_nam = mom_file.clone_public_task("task_2");
     assert!(task_nam.is_some());
     assert_eq!(task_nam.unwrap().get_name(), "task_2");
 
-    let task_nam = mom_file.get_public_task("task_3");
+    let task_nam = mom_file.clone_public_task("task_3");
     assert!(task_nam.is_none());
 }
 
 #[test]
 fn test_task_circular_dependencies_return_error() {
-    let tmp_dir = TempDir::new().unwrap();
-
-    let project_config_path = tmp_dir.path().join("mom.root.yaml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
+    let mom_file = MomFile::from_str(
+        r#"
 version: 1
         
 tasks:
@@ -457,12 +171,8 @@ tasks:
         script: echo hello again
         extend:
             - task_1
-"#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mom_file = MomFile::load(project_config_path.clone());
+"#,
+    );
     assert!(mom_file.is_err());
 
     let err = mom_file.err().unwrap();
@@ -472,31 +182,23 @@ tasks:
         .to_string()
         .starts_with("Found a cyclic dependency for task: task_"));
 
-    // delete the file
-    std::fs::remove_file(&project_config_path).unwrap();
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
+    let mom_file = MomFile::from_str(
+        r#"
 version: 1
 
 tasks:
     task_1:
         cmds:
             - task: task_2
-    
+
     task_2:
         cmds:
-            - task: 
+            - task:
                 extend: task_1
                 cmds:
                     - some command
-"#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mom_file = MomFile::load(project_config_path);
+"#,
+    );
     assert!(mom_file.is_err());
 
     let err = mom_file.err().unwrap();
@@ -509,25 +211,16 @@ tasks:
 
 #[test]
 fn test_inherit_non_existing_task_return_err() {
-    let tmp_dir = TempDir::new().unwrap();
-
-    let project_config_path = tmp_dir.path().join("mom.root.yaml");
-    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
-    project_mom_file
-        .write_all(
-            r#"
+    let mom_file = MomFile::from_str(
+        r#"
 version: 1
 
 tasks:
     task_1:
         script: echo hello
         extend: task_2
-"#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    let mom_file = MomFile::load(project_config_path);
+"#,
+    );
     assert!(mom_file.is_err());
 
     let err = mom_file.err().unwrap();

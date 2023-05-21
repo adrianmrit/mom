@@ -626,7 +626,7 @@ impl Task {
         dry_run: bool,
     ) -> Result<(), TaskError> {
         let display_task_name = format!("{}.cmds.{}.{}", self.name, cmd_index, task_name);
-        if let Some(mut task) = mom_file.get_task(task_name) {
+        if let Some(mut task) = mom_file.clone_task(task_name) {
             // The env and vars of the parent take precedence in this case.
             task.common.env = self.get_env(&task.common.env);
             task.common.vars = self.get_vars(&task.common.vars);
@@ -669,7 +669,7 @@ impl Task {
         for base_name in extend.iter() {
             // Because the bases have been loaded already, there cannot be any circular dependencies
             // Todo, get reference to base task instead of cloning it
-            let base_task = mom_file.get_task(base_name);
+            let base_task = mom_file.clone_task(base_name);
             match base_task {
                 Some(base_task) => task.extend(&base_task),
                 None => {

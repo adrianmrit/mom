@@ -11,9 +11,9 @@ use std::sync::{Arc, Mutex};
 use std::{env, fmt};
 
 use crate::args::ArgsContext;
-use crate::mom_files::{
-    GlobalMomFilePath, MomFile, MomFilePaths, MomFilesContainer, PathIterator, SingleMomFilePath,
-};
+use crate::mom_file_paths::{GlobalMomFilePath, MomFilePaths, PathIterator, SingleMomFilePath};
+use crate::mom_files::MomFile;
+use crate::mom_files_container::MomFilesContainer;
 use crate::print_utils::MomOutput;
 use crate::types::DynErrResult;
 
@@ -126,7 +126,7 @@ impl Mom {
             let mom_file_ptr = self.get_mom_file_lock(path.clone())?;
             let mom_file_lock = mom_file_ptr.lock().unwrap();
 
-            let task = mom_file_lock.get_task(task);
+            let task = mom_file_lock.clone_task(task);
 
             match task {
                 Some(task) => {
@@ -169,7 +169,7 @@ impl Mom {
             let mom_file_ptr = self.get_mom_file_lock(path.clone())?;
             let mom_file_lock = mom_file_ptr.lock().unwrap();
 
-            let task = mom_file_lock.get_public_task(task);
+            let task = mom_file_lock.clone_public_task(task);
 
             match task {
                 Some(task) => {
