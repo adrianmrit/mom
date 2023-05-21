@@ -313,7 +313,7 @@ fn test_create_temp_script() {
 }
 
 #[test]
-fn test_deserialize_command_invalid() {
+fn test_deserialize_cmds() {
     let task = get_task(
         "sample",
         r#"
@@ -327,4 +327,55 @@ fn test_deserialize_command_invalid() {
         // This is a serde error, so doesn't have the task name
         "cmds[0]: missing field `task_name or task` at line 3 column 15"
     );
+
+    let task = get_task(
+        "sample",
+        r#"
+        cmds: 
+            - unknown: "something"
+    "#,
+        None,
+    );
+    assert_eq!(
+        task.unwrap_err().to_string(),
+        "cmds[0]: unknown field `unknown`, expected `task` or `cmd` at line 3 column 15"
+    );
+
+    let task = get_task(
+        "sample",
+        r#"
+        cmds: 
+            - task: "something1"
+            - cmd: "something2"
+            - "something3"
+            - task:
+                script: "something4"
+    "#,
+        None,
+    ).unwrap();
+
+    let cmds = task.cmds.unwrap();
+    assert_eq!(cmds.len(), 4);
+    
+    match &cmds[0] {
+        Cmd::TaskName(task_name) => assert_eq!(task_name, "something1"),
+        _ => panic!("Expected Cmd::TaskName"),
+    }
+
+    match &cmds[1] {
+        Cmd::Cmd(cmd) => assert_eq!(cmd, "something2"),
+        _ => panic!("Expected Cmd::Cmd"),
+    }
+
+    match &cmds[2] {
+        Cmd::Cmd(cmd) => assert_eq!(cmd, "something3"),
+        _ => panic!("Expected Cmd::Cmd"),
+    }
+
+    match &cmds[3] {
+        Cmd::Task(task) => assert_eq!(task.script, Some("something4".to_string())),
+        _ => panic!("Expected Cmd::Task"),
+    }
+
+
 }

@@ -175,7 +175,7 @@ impl<'de> de::Deserialize<'de> for Cmd {
                         }
                         _ => Err(de::Error::unknown_field(
                             key.as_str(),
-                            &["task_name", "task", "cmd"],
+                            &["task", "cmd"],
                         )),
                     },
                     None => Err(de::Error::missing_field("task_name or task")),
