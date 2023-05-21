@@ -356,7 +356,11 @@ impl MomFile {
                 } else if let Some(base_task) = conf.tasks.get(base) {
                     task.extend(base_task);
                 } else {
-                    panic!("Task `{}` does not exist", base);
+                    return Err(format!(
+                        "Task {} cannot inherit from non-existing task {}.",
+                        &dependency_name, &base
+                    )
+                    .into());
                 }
             }
             // insert modified task back in

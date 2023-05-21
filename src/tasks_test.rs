@@ -13,7 +13,7 @@ pub(crate) fn get_task(
     definition: &str,
     base_path: Option<&Path>,
 ) -> Result<Task, Box<dyn std::error::Error>> {
-    let mut task: Task = serde_yaml::from_str(definition).unwrap();
+    let mut task: Task = serde_yaml::from_str(definition)?;
     task.setup(name, base_path.unwrap_or_else(|| Path::new("")))?;
     Ok(task)
 }
@@ -310,4 +310,21 @@ fn test_create_temp_script() {
     assert_eq!(script_path.extension().unwrap(), "sh");
     let script_content = fs::read_to_string(script_path).unwrap();
     assert_eq!(script_content, script);
+}
+
+#[test]
+fn test_deserialize_command_invalid() {
+    let task = get_task(
+        "sample",
+        r#"
+        cmds: 
+            - {}
+    "#,
+        None,
+    );
+    assert_eq!(
+        task.unwrap_err().to_string(),
+        // This is a serde error, so doesn't have the task name
+        "cmds[0]: missing field `task_name or task` at line 3 column 15"
+    );
 }

@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[path = "errors_test.rs"]
+mod errors_test;
+
 use std::error::Error;
 use std::fmt;
 

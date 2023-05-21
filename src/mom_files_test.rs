@@ -11,11 +11,11 @@ fn test_discovery() {
     project_mom_file
         .write_all(
             r#"
-    version: 1
+version: 1
 
-    tasks:
-        hello_project:
-            script: "echo hello project"
+tasks:
+    hello_project:
+        script: "echo hello project"
     "#
             .as_bytes(),
         )
@@ -26,11 +26,27 @@ fn test_discovery() {
     mom_file
         .write_all(
             r#"
-    version: 1
+version: 1
 
-    tasks:
-        hello:
-            script: echo hello
+tasks:
+    hello:
+        script: echo hello
+"#
+            .as_bytes(),
+        )
+        .unwrap();
+
+    let inner_dir = tmp_dir.path().join("inner");
+    std::fs::create_dir(&inner_dir).unwrap();
+    let mut inner_mom_file = File::create(inner_dir.join("mom.yml").as_path()).unwrap();
+    inner_mom_file
+        .write_all(
+            r#"
+version: 1
+
+tasks:
+    hello_inner:
+        script: echo hello inner
     "#
             .as_bytes(),
         )
@@ -41,29 +57,32 @@ fn test_discovery() {
     local_file
         .write_all(
             r#"
-    version: 1
+version: 1
 
-    tasks:
-        hello_local:
-            script: echo hello local
+tasks:
+    hello_local:
+        script: echo hello local
     "#
             .as_bytes(),
         )
         .unwrap();
 
     let mut mom_files = MomFilesContainer::new();
-    let mut paths: Box<MomFilePaths> = MomFilePaths::new(&tmp_dir.path());
+    let mut paths: Box<MomFilePaths> = MomFilePaths::new(&inner_dir);
+    let inner_path = paths.next().unwrap();
     let local_path = paths.next().unwrap();
     let regular_path = paths.next().unwrap();
     let project_path = paths.next().unwrap();
 
     assert!(paths.next().is_none());
 
+    mom_files.read_mom_file(inner_path).unwrap();
     mom_files.read_mom_file(local_path).unwrap();
     mom_files.read_mom_file(regular_path).unwrap();
     mom_files.read_mom_file(project_path).unwrap();
 
     assert!(!mom_files.has_task("non_existent"));
+    assert!(mom_files.has_task("hello_inner"));
     assert!(mom_files.has_task("hello_project"));
     assert!(mom_files.has_task("hello"));
     assert!(mom_files.has_task("hello_local"));
@@ -418,7 +437,7 @@ tasks:
 }
 
 #[test]
-fn test_circular_dependencies_return_error() {
+fn test_task_circular_dependencies_return_error() {
     let tmp_dir = TempDir::new().unwrap();
 
     let project_config_path = tmp_dir.path().join("mom.root.yaml");
@@ -452,4 +471,34 @@ tasks:
     assert!(err
         .to_string()
         .starts_with("Found a cyclic dependency for task: task_"));
+}
+
+#[test]
+fn test_inherit_non_existing_task_return_err() {
+    let tmp_dir = TempDir::new().unwrap();
+
+    let project_config_path = tmp_dir.path().join("mom.root.yaml");
+    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
+    project_mom_file
+        .write_all(
+            r#"
+version: 1
+
+tasks:
+    task_1:
+        script: echo hello
+        extend: task_2
+"#
+            .as_bytes(),
+        )
+        .unwrap();
+
+    let mom_file = MomFile::load(project_config_path);
+    assert!(mom_file.is_err());
+
+    let err = mom_file.err().unwrap();
+    dbg!(&err);
+    assert!(err
+        .to_string()
+        .contains("Task task_1 cannot inherit from non-existing task task_2"));
 }
