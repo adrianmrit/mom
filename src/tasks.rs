@@ -173,10 +173,7 @@ impl<'de> de::Deserialize<'de> for Cmd {
                             let cmd: String = map.next_value()?;
                             Ok(Cmd::Cmd(cmd))
                         }
-                        _ => Err(de::Error::unknown_field(
-                            key.as_str(),
-                            &["task", "cmd"],
-                        )),
+                        _ => Err(de::Error::unknown_field(key.as_str(), &["task", "cmd"])),
                     },
                     None => Err(de::Error::missing_field("task_name or task")),
                 }

@@ -48,3 +48,9 @@ fn test_from_aware_task_error_to_task_error() {
         "Runtime error:\nTask `test` failed:\nImproperly configured:\ntest"
     );
 }
+
+#[test]
+fn test_not_found_task_err() {
+    let err = TaskError::NotFound(String::from("test"));
+    assert_eq!(err.to_string(), "Task `test` not found.");
+}

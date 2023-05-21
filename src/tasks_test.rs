@@ -352,11 +352,12 @@ fn test_deserialize_cmds() {
                 script: "something4"
     "#,
         None,
-    ).unwrap();
+    )
+    .unwrap();
 
     let cmds = task.cmds.unwrap();
     assert_eq!(cmds.len(), 4);
-    
+
     match &cmds[0] {
         Cmd::TaskName(task_name) => assert_eq!(task_name, "something1"),
         _ => panic!("Expected Cmd::TaskName"),
@@ -376,6 +377,4 @@ fn test_deserialize_cmds() {
         Cmd::Task(task) => assert_eq!(task.script, Some("something4".to_string())),
         _ => panic!("Expected Cmd::Task"),
     }
-
-
 }
