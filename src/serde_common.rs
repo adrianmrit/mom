@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     mem,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
@@ -74,12 +74,12 @@ impl<'a> Iterator for StringOrVecStringIter<'a> {
 }
 
 /// Common fields for tasks and files
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Default, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct CommonFields {
     /// Working directory. Defaults to the folder where the script runs.
     #[serde(default)]
-    pub(crate) wd: Option<String>,
+    pub(crate) wd: Option<PathBuf>,
 
     /// Env variables for all the tasks.
     #[serde(default)]
@@ -119,7 +119,7 @@ impl CommonFields {
     /// * `base_path`: path to use as a reference to resolve relative paths
     ///
     /// returns: Result<(), Box<dyn Error, Global>>
-    pub(crate) fn load_dotenv(&mut self, base_path: &Path) -> DynErrResult<()> {
+    pub(crate) fn setup(&mut self, base_path: &Path) -> DynErrResult<()> {
         // removes the env_file as we won't need it again
         let envfiles = mem::take(&mut self.dotenv);
         for env_file in envfiles.iter() {
@@ -129,6 +129,18 @@ impl CommonFields {
                 self.env.entry(key).or_insert(val);
             }
         }
+
+        self.wd = match &self.wd {
+            None => None,
+            Some(wd) => {
+                if wd == &PathBuf::from(".") {
+                    Some(base_path.to_path_buf())
+                } else {
+                    Some(get_path_relative_to_base(base_path, wd))
+                }
+            }
+        };
+
         Ok(())
     }
 }

@@ -324,7 +324,7 @@ impl MomFile {
         let mut conf: MomFile = MomFile::extract(path.as_path())?;
         conf.filepath = path;
         conf.directory = PathBuf::from(conf.filepath.parent().unwrap());
-        conf.common.load_dotenv(&conf.directory)?;
+        conf.common.setup(&conf.directory)?;
 
         let mut tasks = conf.get_flat_tasks()?;
 

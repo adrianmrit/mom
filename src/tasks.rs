@@ -252,7 +252,7 @@ impl Task {
     ///
     pub(crate) fn setup(&mut self, name: &str, base_path: &Path) -> Result<(), AwareTaskError> {
         self.name = String::from(name);
-        match self.common.load_dotenv(base_path) {
+        match self.common.setup(base_path) {
             Ok(_) => {}
             Err(e) => {
                 return Err(AwareTaskError::new(
