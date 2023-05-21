@@ -9,6 +9,8 @@
 * [Inspiration](#inspiration)
 * [Installation](#installation)
   * [Binary releases](#binary-releases)
+* [JSON Schema](#json-schema)
+  * [VSCode](#vscode)
 * [Quick start](#quick-start)
 * [Usage](#usage)
   * [Command line options](#command-line-options)
@@ -62,7 +64,7 @@ Pro-tip: make sure `~/.cargo/bin` directory is in your `PATH` environment variab
 
 
 <a name="binary-releases"></a>
-### Binary releases:
+### Binary releases
 
 Binaries are also available for Windows, Linux and macOS under
 [releases](https://github.com/adrianmrit/mom/releases/). To install, download the zip for your system, extract,
@@ -70,7 +72,7 @@ and copy the binary to the desired location. You will need to ensure the folder 
 in the `PATH`.
 
 
-<a name="JSON Schema">
+<a name="JSON Schema"></a>
 ## JSON Schema
 
 The JSON schema for the task files can be found [here](https://raw.githubusercontent.com/adrianmrit/mom/main/json-schema/mom.json).
