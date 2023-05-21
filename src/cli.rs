@@ -104,7 +104,8 @@ impl Mom {
 
             println!("{}:", colorize_mom_file_path(&path.to_string_lossy()));
 
-            let task_names = mom_file_lock.get_public_task_names();
+            let mut task_names = mom_file_lock.get_public_task_names();
+            task_names.sort();
             if task_names.is_empty() {
                 println!("  {}", "No tasks found.".red());
             } else {
