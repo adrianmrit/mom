@@ -238,6 +238,28 @@ pub(crate) struct Task {
 }
 
 impl Task {
+    /// Returns the dependencies of the task.
+    pub(crate) fn get_dependencies(&self) -> Vec<String> {
+        let mut dependencies: Vec<String> =
+            self.common.extend.iter().map(|e| e.to_string()).collect();
+
+        if let Some(cmds) = &self.cmds {
+            for cmd in cmds {
+                match cmd {
+                    Cmd::TaskName(task_name) => {
+                        dependencies.push(task_name.to_string());
+                    }
+                    Cmd::Task(task) => {
+                        dependencies.append(&mut task.get_dependencies());
+                    }
+                    Cmd::Cmd(_) => {}
+                }
+            }
+        }
+
+        dependencies
+    }
+
     /// Does extra setup on the task and does some validation.
     ///
     /// # Arguments

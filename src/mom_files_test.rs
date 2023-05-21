@@ -446,18 +446,52 @@ fn test_task_circular_dependencies_return_error() {
         .write_all(
             r#"
 version: 1
-
+        
 tasks:
     task_1:
         script: echo hello
         extend:
             - task_2
-    
+        
     task_2:
         script: echo hello again
         extend:
             - task_1
-        "#
+"#
+            .as_bytes(),
+        )
+        .unwrap();
+
+    let mom_file = MomFile::load(project_config_path.clone());
+    assert!(mom_file.is_err());
+
+    let err = mom_file.err().unwrap();
+
+    // Can be either task_1 or task_2
+    assert!(err
+        .to_string()
+        .starts_with("Found a cyclic dependency for task: task_"));
+
+    // delete the file
+    std::fs::remove_file(&project_config_path).unwrap();
+    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
+    project_mom_file
+        .write_all(
+            r#"
+version: 1
+
+tasks:
+    task_1:
+        cmds:
+            - task: task_2
+    
+    task_2:
+        cmds:
+            - task: 
+                extend: task_1
+                cmds:
+                    - some command
+"#
             .as_bytes(),
         )
         .unwrap();
@@ -497,7 +531,6 @@ tasks:
     assert!(mom_file.is_err());
 
     let err = mom_file.err().unwrap();
-    dbg!(&err);
     assert!(err
         .to_string()
         .contains("Task task_1 cannot inherit from non-existing task task_2"));

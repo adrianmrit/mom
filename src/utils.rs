@@ -81,47 +81,22 @@ pub(crate) fn get_task_dependency_graph<'a>(
 ) -> DynErrResult<DiGraphMap<&'a str, ()>> {
     let mut graph: DiGraphMap<&'a str, ()> = DiGraphMap::new();
 
-    let mut bases_stack: Vec<&str> = vec![];
     for (task_name, task) in tasks {
-        let mut current_task = task;
-        let mut current_task_name: &str = task_name;
-
-        if current_task.common.extend.is_empty() {
-            continue;
-        }
-
-        loop {
-            for base_name in current_task.common.extend.iter() {
-                let os_base_name = to_os_task_name(base_name);
-                let base_name = if tasks.contains_key(&os_base_name) {
-                    // os_base_name needs to be a reference to the string in the HashMap
-                    let (os_base_name, _) = tasks.get_key_value(&os_base_name).unwrap();
-                    os_base_name
-                } else {
-                    base_name
-                };
-                if !graph.contains_node(base_name) {
-                    bases_stack.push(base_name);
-                }
-                graph.add_edge(current_task_name, base_name, ());
-            }
-            while let Some(base) = bases_stack.pop() {
-                match tasks.get(base) {
-                    None => {
-                        return Err(format!(
-                            "Task {} cannot inherit from non-existing task {}.",
-                            current_task_name, base
-                        )
-                        .into())
-                    }
-                    Some(new_current_task) => {
-                        current_task = new_current_task;
-                        current_task_name = base;
-                    }
-                }
-            }
-            if bases_stack.is_empty() {
-                break;
+        // The dependency graph must contain all nodes, even if they do not have any relations.
+        // So that we can use the graph to traverse the tasks in the correct order.
+        graph.add_node(&task_name);
+        for base_name in task.get_dependencies() {
+            let os_base_name = to_os_task_name(&base_name);
+            if let Some((key, _)) = tasks.get_key_value(&os_base_name) {
+                graph.add_edge(task_name, key, ());
+            } else if let Some((key, _)) = tasks.get_key_value(&base_name) {
+                graph.add_edge(task_name, key, ());
+            } else {
+                return Err(format!(
+                    "Task {} cannot inherit from non-existing task {}.",
+                    task_name, base_name
+                )
+                .into());
             }
         }
     }
