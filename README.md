@@ -56,10 +56,7 @@ and
 <a name="installation"></a>
 ## Installation
 
-If you have [Rust](https://www.rust-lang.org/) and [Cargo](https://doc.rust-lang.org/cargo/) installed ([rust installation instructions](https://www.rust-lang.org/tools/install)). Then run:
-```bash
-cargo install --force mom
-```
+Coming soon to [crates.io](https://crates.io/).
 
 Pro-tip: make sure `~/.cargo/bin` directory is in your `PATH` environment variable.
 
