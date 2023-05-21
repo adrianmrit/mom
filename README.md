@@ -70,6 +70,37 @@ and copy the binary to the desired location. You will need to ensure the folder 
 in the `PATH`.
 
 
+<a name="JSON Schema">
+## JSON Schema
+
+The JSON schema for the task files can be found [here](https://raw.githubusercontent.com/adrianmrit/mom/main/json-schema/mom.json).
+
+You can configure your IDE to use the schema for autocompletion and validation.
+
+### VSCode
+
+To integrate the schema with VSCode, you can use the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml).
+Once installed, you can add the following to your `settings.json` file:
+
+```json
+"yaml.schemas": {
+  "https://raw.githubusercontent.com/adrianmrit/mom/main/json-schema/mom.json": [
+    "mom.*.yml",
+    "mom.*.yaml",
+    "mom.yml",
+    "mom.yaml",
+  ]
+}
+```
+
+You can also add the schema to a specific file by adding the following to the top of the file:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/adrianmrit/mom/main/json-schema/mom.json
+version: 1
+```
+
+
 <a name="quick-start"></a>
 ## Quick start
 
