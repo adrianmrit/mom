@@ -298,6 +298,45 @@ tasks:
 }
 
 #[test]
+fn test_mom_file_flatten_task() {
+    let tmp_dir = TempDir::new().unwrap();
+
+    let project_config_path = tmp_dir.path().join("mom.root.yaml");
+    let mut project_mom_file = File::create(project_config_path.as_path()).unwrap();
+    project_mom_file
+        .write_all(
+            r#"
+version: 1
+
+tasks:
+    test:
+        script: echo hello
+        windows:
+            script: echo hello windows
+        macos:
+            script: echo hello macos
+        linux:
+            script: echo hello linux
+"#
+            .as_bytes(),
+        )
+        .unwrap();
+    let mom_file = MomFile::load(project_config_path).unwrap();
+
+    let task = mom_file.tasks.get("test");
+    assert!(task.is_some());
+    assert_eq!(task.unwrap().script().unwrap(), "echo hello");
+
+    let task = mom_file.tasks.get("test.windows");
+    assert!(task.is_some());
+    assert_eq!(task.unwrap().script().unwrap(), "echo hello windows");
+
+    let task = mom_file.tasks.get("test.macos");
+    assert!(task.is_some());
+    assert_eq!(task.unwrap().script().unwrap(), "echo hello macos");
+}
+
+#[test]
 fn test_mom_file_get_task() {
     let tmp_dir = TempDir::new().unwrap();
 

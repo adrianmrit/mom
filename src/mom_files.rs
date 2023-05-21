@@ -389,39 +389,32 @@ impl MomFile {
     fn get_flat_tasks(&mut self) -> DynErrResult<HashMap<String, Task>> {
         let mut flat_tasks = HashMap::new();
         let tasks = std::mem::take(&mut self.tasks);
-        for (name, mut task) in tasks {
-            // TODO: Use a macro
-            if task.linux.is_some() {
-                let os_task = std::mem::replace(&mut task.linux, None);
+
+        // macro to avoid repeating code
+        macro_rules! insert_os_task {
+            ($os_task:expr, $parent_name:expr, $os_name:expr) => {
+                let os_task = std::mem::replace(&mut $os_task, None);
                 let mut os_task = *os_task.unwrap();
-                let os_task_name = format!("{}.linux", name);
+                let os_task_name = format!("{}.{}", $parent_name, $os_name);
                 if flat_tasks.contains_key(&os_task_name) {
                     return Err(format!("Duplicate task `{}`", os_task_name).into());
                 }
                 os_task.setup(&os_task_name, &self.directory)?;
                 flat_tasks.insert(os_task_name, os_task);
+            };
+        }
+
+        for (name, mut task) in tasks {
+            if task.linux.is_some() {
+                insert_os_task!(task.linux, name, "linux");
             }
 
             if task.windows.is_some() {
-                let os_task = std::mem::replace(&mut task.windows, None);
-                let mut os_task = *os_task.unwrap();
-                let os_task_name = format!("{}.windows", name);
-                if flat_tasks.contains_key(&os_task_name) {
-                    return Err(format!("Duplicate task `{}`", os_task_name).into());
-                }
-                os_task.setup(&os_task_name, &self.directory)?;
-                flat_tasks.insert(os_task_name, os_task);
+                insert_os_task!(task.windows, name, "windows");
             }
 
             if task.macos.is_some() {
-                let os_task = std::mem::replace(&mut task.macos, None);
-                let mut os_task = *os_task.unwrap();
-                let os_task_name = format!("{}.macos", name);
-                if flat_tasks.contains_key(&os_task_name) {
-                    return Err(format!("Duplicate task `{}`", os_task_name).into());
-                }
-                os_task.setup(&os_task_name, &self.directory)?;
-                flat_tasks.insert(os_task_name, os_task);
+                insert_os_task!(task.macos, name, "macos");
             }
             task.setup(&name, &self.directory)?;
             flat_tasks.insert(name, task);
