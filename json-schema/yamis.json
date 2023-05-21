@@ -35,7 +35,7 @@
                 "description": "The working directory when running a task",
                 "type": "string"
             },
-            "templates": {
+            "incl": {
                 "description": "Templates that can be used by the Tera template engine.",
                 "type": "object",
                 "additionalProperties": {
@@ -77,8 +77,8 @@
                             "description": "Help for the task",
                             "type": "string"
                         },
-                        "templates": {
-                            "$ref": "#/$defs/v2/templates"
+                        "incl": {
+                            "$ref": "#/$defs/v2/incl"
                         },
                         "script": {
                             "description": "The script to run for the task",
@@ -203,8 +203,8 @@
                 }
             ]
         },
-        "templates": {
-            "$ref": "#/$defs/v2/templates"
+        "incl": {
+            "$ref": "#/$defs/v2/incl"
         },
         "wd": {
             "$ref": "#/$defs/v2/wd"

@@ -386,7 +386,7 @@ impl Task {
 
     /// Same as `get_env` but for the tera templates
     fn get_templates(&self, tera_templates: &BTreeMap<String, String>) -> BTreeMap<String, String> {
-        let mut new_templates: BTreeMap<String, String> = self.common.templates.clone();
+        let mut new_templates: BTreeMap<String, String> = self.common.incl.clone();
         for (key, val) in tera_templates {
             new_templates
                 .entry(key.clone())
@@ -425,11 +425,11 @@ impl Task {
     // Returns the Tera instance for the Tera template engine.
     fn get_tera_instance(&self, mom_file: &MomFile) -> Result<tera::Tera, TaskError> {
         let mut tera = tera::Tera::default();
-        for (name, template) in mom_file.common.templates.iter() {
-            tera.add_raw_template(&format!("templates.{name}"), template)?;
+        for (name, template) in mom_file.common.incl.iter() {
+            tera.add_raw_template(&format!("incl.{name}"), template)?;
         }
-        for (name, template) in self.common.templates.iter() {
-            tera.add_raw_template(&format!("templates.{name}"), template)?;
+        for (name, template) in self.common.incl.iter() {
+            tera.add_raw_template(&format!("incl.{name}"), template)?;
         }
         Ok(tera)
     }
@@ -612,7 +612,7 @@ impl Task {
             // The env and vars of the parent take precedence in this case.
             task.common.env = self.get_env(&task.common.env);
             task.common.vars = self.get_vars(&task.common.vars);
-            task.common.templates = self.get_templates(&task.common.templates);
+            task.common.incl = self.get_templates(&task.common.incl);
 
             // Should setup first, to load the env_file.
             task.setup(&display_task_name, &mom_file.directory)?;
@@ -663,7 +663,7 @@ impl Task {
         // Done after setup and bases, so that the env and vars specified directly in the child take precedence
         task.common.env = task.get_env(&self.common.env);
         task.common.vars = task.get_vars(&self.common.vars);
-        task.common.templates = task.get_templates(&self.common.templates);
+        task.common.incl = task.get_templates(&self.common.incl);
 
         // This should load the mom file env and vars
         task.run(args, mom_file, dry_run).map_err(|e| e.into())

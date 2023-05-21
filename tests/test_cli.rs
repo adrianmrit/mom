@@ -704,7 +704,7 @@ fn test_templates() -> Result<(), Box<dyn std::error::Error>> {
         r#"
 version: 1
 
-templates: 
+incl: 
     echo: >
         {% macro echo(msg, type="text") %}echo {{ msg }}{% endmacro %}
     echo2: >
@@ -712,16 +712,16 @@ templates:
 
 tasks:
     test:
-        templates:
+        incl:
             echo2: >
                 echo {{ args.0 | upper }}
             bye: >
                 and bye
         cmds:
             - |
-                {% import "templates.echo" as macros %}{{ macros::echo(msg="hello") }} world
+                {% import "incl.echo" as macros %}{{ macros::echo(msg="hello") }} world
             - |
-                {% include "templates.echo2" %} {% include "templates.bye" %}
+                {% include "incl.echo2" %} {% include "incl.bye" %}
 "#
         .as_bytes(),
     )?;

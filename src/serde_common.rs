@@ -95,7 +95,7 @@ pub(crate) struct CommonFields {
 
     /// Adds the given text to Tera, so that they can be included in templates
     #[serde(default)]
-    pub(crate) templates: BTreeMap<String, String>, // Order matters, so we use a BTreeMap
+    pub(crate) incl: BTreeMap<String, String>, // Order matters, so we use a BTreeMap
 
     /// Files to extend from
     #[serde(default)]
@@ -109,7 +109,7 @@ impl CommonFields {
         // inherit_option_value!(self.env_file, other.env_file);
         merge_map_values!(self.env, &other.env);
         merge_map_values!(self.vars, &other.vars);
-        merge_map_values!(self.templates, &other.templates);
+        merge_map_values!(self.incl, &other.incl);
     }
 
     /// Loads the environment file into the environment variables

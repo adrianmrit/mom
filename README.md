@@ -17,7 +17,7 @@
     * [wd](#wd)
     * [env](#env)
     * [dotenv](#dotenv)
-    * [templates](#templates)
+    * [incl](#incl)
   * [Tasks File Properties](#tasks-file-properties)
     * [version](#version)
     * [tasks](#tasks)
@@ -163,7 +163,7 @@ precedence over the value defined in the file.
 - [env](#env): Environment variables.
 - [dotenv](#dotenv): File or list of files containing environment variables.
 - [vars](#vars): Variables.
-- [templates](#templates): Templates.
+- [incl](#incl): Templates that can be included/imported in the Tera template engine.
 
 
 <a name="wd"></a>
@@ -229,28 +229,28 @@ tasks:
 ```
 
 
-<a name="templates"></a>
-##### templates
+<a name="incl"></a>
+##### incl
 
-The `templates` property is used to define Tera templates that will be available to all tasks in the file.
+The `incl` property is used to define Tera includes/templates that will be available to all tasks in the file.
 The value of the property is a map of key-value pairs, where the key is the name of the template,
-and the value is the template itself. The template can then be accessed in a task with the name `templates.<name>`.
+and the value is the template itself. The template can then be accessed in a task with the name `incl.<name>`.
 
 Templates can include other templates, but the order in which they are defined matters.
 
 For example, you can define a template like this:
 
 ```yaml
-templates:
+incl:
   say_hi: "Hi from {{ TASK.name }}!"
-  say_bye: "Bye from {% include "templates.say_hi" %}!"
+  say_bye: "Bye from {% include "incl.say_hi" %}!"
 ```
 
 However, the following will not work:
 
 ```yaml
-templates:
-  say_bye: "Bye from {% include "templates.say_hi" %}!"
+incl:
+  say_bye: "Bye from {% include "incl.say_hi" %}!"
   say_hi: "Hi from {{ TASK.name }}!"
 ```
 
@@ -305,7 +305,7 @@ The inherited values are:
 Values merged (with the file values taking precedence) are:
 - [env](#env)
 - [vars](#vars)
-- [templates](#templates)
+- [incl](#incl)
 - [tasks](#tasks)
 
 [dotenv](#dotenv) is loaded and merged with the [env](#env) in the same file before extending from a file or merging into the parent file.
@@ -458,7 +458,7 @@ The inherited values are:
 Values merged (with the parent values taking precedence) are:
 - [env](#env)
 - [vars](#vars)
-- [templates](#templates)
+- [incl](#incl)
 
 Just like in the file, [dotenv](#dotenv) is loaded and merged with the [env](#env) in the same task before extending from a task or merging into the parent task. Which means it is treated as part of the [env](#env) in the task.
 
