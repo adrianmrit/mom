@@ -1,8 +1,8 @@
 #[cfg(feature = "runtime")]
-use mom::print_utils::MomOutput;
+use mom_task::print_utils::MomOutput;
 
 #[cfg(feature = "runtime")]
-use mom::cli::exec;
+use mom_task::cli::exec;
 
 #[cfg(feature = "runtime")]
 fn main() {
