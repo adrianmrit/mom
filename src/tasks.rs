@@ -19,10 +19,9 @@ use crate::print_utils::{MomOutput, INFO_COLOR};
 use crate::serde_common::CommonFields;
 use colored::Colorize;
 use serde::{de, Deserialize, Serialize};
-use tera;
 
 use crate::types::DynErrResult;
-use crate::utils::{get_path_relative_to_base, join_commands, split_command, TMP_FOLDER_NAMESPACE};
+use crate::utils::{get_working_directory, join_commands, split_command, TMP_FOLDER_NAMESPACE};
 use md5::{Digest, Md5};
 
 pub(crate) const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
@@ -494,11 +493,13 @@ impl Task {
         let mom_file_folder = &mom_file.directory;
 
         let wd = match &self.common.wd {
-            None => mom_file.working_directory(),
-            Some(wd) => Some(get_path_relative_to_base(mom_file_folder, wd)),
+            None => mom_file.common.wd.as_ref(),
+            Some(wd) => Some(wd),
         };
 
         if let Some(wd) = wd {
+            // wd may be absolute or relative to the mom file folder
+            let wd = get_working_directory(mom_file_folder, wd);
             command.current_dir(wd);
         }
 

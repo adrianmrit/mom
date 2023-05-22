@@ -67,6 +67,35 @@ mod tests {
         let path = "/test";
         let path = get_path_relative_to_base(base, path);
         assert_eq!(path, PathBuf::from("/test"));
+
+        let base = "/home/user";
+        let path = ".";
+        let path = get_path_relative_to_base(base, path);
+        assert_eq!(path, PathBuf::from("/home/user"));
+
+        let base = "/home/user";
+        let path = "./hello";
+        let path = get_path_relative_to_base(base, path);
+        assert_eq!(path, PathBuf::from("/home/user/hello"));
+    }
+
+    #[test]
+    fn test_working_directory() {
+        let base = "/home/user";
+        let path = "test";
+        let path = get_working_directory(base, path);
+        assert_eq!(path, PathBuf::from("/home/user/test"));
+
+        let base = "/home/user";
+        let path = "";
+
+        let path = get_working_directory(base, path);
+        assert_eq!(path, current_dir().unwrap());
+
+        let base = "/home/user";
+        let path = ".";
+        let path = get_working_directory(base, path);
+        assert_eq!(path, PathBuf::from("/home/user"));
     }
 
     #[test]

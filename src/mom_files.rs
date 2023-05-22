@@ -7,7 +7,7 @@ use crate::merge_map_values;
 use crate::serde_common::CommonFields;
 use crate::tasks::Task;
 use crate::types::DynErrResult;
-use crate::utils::{get_path_relative_to_base, get_task_dependency_graph, to_os_task_name};
+use crate::utils::{get_task_dependency_graph, to_os_task_name};
 use lazy_static::lazy_static;
 use petgraph::algo::toposort;
 use serde::{Deserialize, Serialize};
@@ -170,16 +170,6 @@ impl MomFile {
     pub(crate) fn extend(&mut self, other: &MomFile) {
         self.common.extend(&other.common);
         merge_map_values!(self.tasks, &other.tasks);
-    }
-
-    /// If set in the mom file, returns the working directory as an absolute path.
-    pub(crate) fn working_directory(&self) -> Option<PathBuf> {
-        // Some sort of cache would make it faster, but keeping it
-        // simple until it is really needed
-        self.common
-            .wd
-            .as_ref()
-            .map(|wd| get_path_relative_to_base(&self.directory, wd))
     }
 
     /// Returns plain and OS specific tasks with normalized names. This consumes `self.tasks`

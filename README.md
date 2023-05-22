@@ -189,7 +189,7 @@ only one format for consistency and to avoid confusion.
 The following properties can be defined in the task file or in the task itself. The value defined in the task takes
 precedence over the value defined in the file.
 
-- [wd](#wd): The default working directory.
+- [wd](#wd): The working directory.
 - [env](#env): Environment variables.
 - [dotenv](#dotenv): File or list of files containing environment variables.
 - [vars](#vars): Variables.
@@ -199,15 +199,13 @@ precedence over the value defined in the file.
 <a name="wd"></a>
 ##### wd
 
-The `wd` property is used to define the default working directory for the tasks in the file. The value of the
-property is a string containing the path to the working directory. The path can be absolute or relative to the
-location of the file.
+The `wd` property is used to define the working directory. Defaults to the current working directory. It can be defined
+at the file or task, with the value defined in the task taking precedence over the value defined in the file.
 
-If not defined in the file or task, it defaults to the directory where the command was
-executed. To set the working directory relative to the location of the file, use `wd: ""`. Note that
-`wd: "/"` will not work, as it will be interpreted as an absolute path.
-
-The value defined in the executed task takes precedence over the value defined in the file.
+The path can be absolute or relative to the location of the file. To set the working directory to the location of the
+file, use `wd: "."`. Alternatively, to set it to the directory where the command was executed, use `wd: ""`. Note that
+while in the task you can set `wd: null`, it will be treated as if `wd` was not defined, therefore inheriting from the
+parent.
 
 
 <a name="env"></a>

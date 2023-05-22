@@ -7,6 +7,7 @@ use crate::types::DynErrResult;
 use dotenv_parser::parse_dotenv;
 use petgraph::graphmap::DiGraphMap;
 use std::collections::{BTreeMap, HashMap};
+use std::env::current_dir;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
@@ -117,11 +118,25 @@ pub(crate) fn get_path_relative_to_base<B: AsRef<OsStr> + ?Sized, P: AsRef<OsStr
     path: &P,
 ) -> PathBuf {
     let path = Path::new(path);
+    let path = path.strip_prefix("./").unwrap_or(path);
+    if path == Path::new(".") {
+        return PathBuf::from(base);
+    }
     if !path.is_absolute() {
         let base = Path::new(base);
         return base.join(path);
     }
     path.to_path_buf()
+}
+
+pub(crate) fn get_working_directory<B: AsRef<OsStr> + ?Sized, P: AsRef<OsStr> + ?Sized>(
+    base: &B,
+    path: &P,
+) -> PathBuf {
+    if path.as_ref().to_string_lossy().is_empty() {
+        return current_dir().unwrap();
+    }
+    get_path_relative_to_base(base, path)
 }
 
 /// Reads the content of an environment file from the given path and returns a BTreeMap.

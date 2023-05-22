@@ -130,17 +130,6 @@ impl CommonFields {
             }
         }
 
-        self.wd = match &self.wd {
-            None => None,
-            Some(wd) => {
-                if wd == &PathBuf::from(".") {
-                    Some(base_path.to_path_buf())
-                } else {
-                    Some(get_path_relative_to_base(base_path, wd))
-                }
-            }
-        };
-
         Ok(())
     }
 }
