@@ -24,7 +24,7 @@ use crate::types::DynErrResult;
 use crate::utils::{get_working_directory, join_commands, split_command, TMP_FOLDER_NAMESPACE};
 use md5::{Digest, Md5};
 
-pub(crate) const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
+pub const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
 
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {

@@ -11,6 +11,6 @@ pub(crate) mod mom_files;
 pub(crate) mod mom_files_container;
 pub mod print_utils;
 pub(crate) mod serde_common;
-pub(crate) mod tasks;
+pub mod tasks;
 pub(crate) mod types;
 mod utils;
