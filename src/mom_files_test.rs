@@ -228,3 +228,52 @@ tasks:
         .to_string()
         .contains("Task task_1 cannot inherit from non-existing task task_2"));
 }
+
+#[test]
+fn test_valid_task_name() {
+    let mom_file = MomFile::from_str(
+        r#"
+version: 1
+
+tasks:
+    "-invalid_task_name":
+        script: echo hello
+"#,
+    );
+    assert!(mom_file.is_err());
+
+    let err = mom_file.err().unwrap();
+    assert!(err
+        .to_string()
+        .contains("Invalid task name `-invalid_task_name`"));
+
+    let mom_file = MomFile::from_str(
+        r#"
+version: 1
+
+tasks:
+    "invalid:task_name":
+        script: echo hello
+"#,
+    );
+    assert!(mom_file.is_err());
+
+    let err = mom_file.err().unwrap();
+    assert!(err
+        .to_string()
+        .contains("Invalid task name `invalid:task_name`"));
+
+    let mom_file = MomFile::from_str(
+        r#"
+version: 1
+
+tasks:
+    "":
+        script: echo hello
+"#,
+    );
+    assert!(mom_file.is_err());
+
+    let err = mom_file.err().unwrap();
+    assert!(err.to_string().contains("Invalid task name ``"));
+}

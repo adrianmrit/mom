@@ -169,8 +169,10 @@
             "mom_file_tasks": {
                 "description": "Task configuration",
                 "type": "object",
-                "additionalProperties": {
-                    "$ref": "#/$defs/v2/task"
+                "patternProperties": {
+                    "^[_a-zA-Z][a-zA-Z0-9_-]*(\\.(windows|linux|macos))?$": {
+                        "$ref": "#/$defs/v2/task"
+                    }
                 }
             }
         }

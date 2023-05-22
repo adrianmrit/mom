@@ -302,11 +302,13 @@ Besides the [common properties](#common-properties), the following properties ca
 
 <a name="tasks"></a>
 ##### tasks
+
 The `tasks` property is used to define the tasks in the file. The value of the property is a map of key-value
 pairs, where the key is the name of the task, and the value is the task definition.
 
-The name of the task can be any string, but it is recommended to use only alphanumeric characters and dashes.
-Private tasks should start with an underscore, i.e. `_private-task`.
+The name of the task must start with an ascii alpha character or underscore, followed by any number of letters, digits,
+`-` or `_`. The name may also end with `.windows`, `.linux` or `.macos` to define an [OS-specific](#os-specific-tasks) task.
+You can choose, as a convention, to name [private tasks](#private) with a leading underscore, i.e. `_private_task`.
 
 <a name="file_extend"></a>
 ##### File extend

@@ -25,7 +25,7 @@ use crate::types::DynErrResult;
 use crate::utils::{get_path_relative_to_base, join_commands, split_command, TMP_FOLDER_NAMESPACE};
 use md5::{Digest, Md5};
 
-pub const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
+pub(crate) const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
 
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
@@ -192,7 +192,7 @@ impl<'de> de::Deserialize<'de> for Cmd {
 pub(crate) struct Task {
     /// Name of the task
     #[serde(skip_deserializing)]
-    name: String,
+    pub(crate) name: String,
 
     #[serde(flatten)]
     pub(crate) common: CommonFields,

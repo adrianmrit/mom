@@ -8,6 +8,7 @@ use crate::serde_common::CommonFields;
 use crate::tasks::Task;
 use crate::types::DynErrResult;
 use crate::utils::{get_path_relative_to_base, get_task_dependency_graph, to_os_task_name};
+use lazy_static::lazy_static;
 use petgraph::algo::toposort;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -32,7 +33,49 @@ pub(crate) struct MomFile {
 
     /// Tasks inside the mom file.
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_tasks")]
     pub(crate) tasks: HashMap<String, Task>,
+}
+
+fn deserialize_tasks<'de, D>(deserializer: D) -> Result<HashMap<String, Task>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    struct TaskVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for TaskVisitor {
+        type Value = HashMap<String, Task>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a map of tasks")
+        }
+
+        fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+        where
+            M: serde::de::MapAccess<'de>,
+        {
+            lazy_static! {
+                static ref KEY_REGEX: regex::Regex =
+                    regex::Regex::new(r"^[_a-zA-Z][a-zA-Z0-9_-]*(\.(windows|linux|macos))?$")
+                        .unwrap();
+            }
+            let mut tasks = HashMap::new();
+            while let Some((key, task)) = map.next_entry::<String, Task>()? {
+                if !KEY_REGEX.is_match(&key) {
+                    return Err(serde::de::Error::custom(format!(
+                        "Invalid task name `{}`. Task names must start with a letter or underscore and can only \
+                        contain letters, numbers, underscores and dashes. They can also end with .windows, .linux \
+                        or .macos to specify an OS specific task.",
+                        key
+                    )));
+                }
+                tasks.insert(key, task);
+            }
+            Ok(tasks)
+        }
+    }
+
+    deserializer.deserialize_map(TaskVisitor)
 }
 
 impl MomFile {
