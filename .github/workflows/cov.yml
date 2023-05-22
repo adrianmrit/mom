@@ -1,8 +1,4 @@
 # Based on https://github.com/codecov/example-rust
-#
-# While our "example" application has the platform-specific code,
-# for simplicity we are compiling and testing everything on the Ubuntu environment only.
-# For multi-OS testing see the `cross.yml` workflow.
 
 on:
   push:
