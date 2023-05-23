@@ -1,4 +1,4 @@
-# mom
+# mom-task
 ![build](https://github.com/adrianmrit/mom/actions/workflows/test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/adrianmrit/mom/branch/main/graph/badge.svg?token=3BBJFNNJPT)](https://codecov.io/gh/adrianmrit/mom)
 ![License: MIT](https://img.shields.io/github/license/adrianmrit/mom)
@@ -55,10 +55,22 @@ and
 [docker-compose](https://docs.docker.com/compose/).
 
 
+This project is a fork of my previous project [yamis](https://github.com/adrianmrit/yamis), which started as a 
+simple task runner for work and personal projects, also as a way to learn Rust. I decided to fork it to drop some
+unnecessary complexity and improve the YAML file structure, i.e. to more closely follow existing tools. This also
+uses a more familiar name for the binary, pun intended.
+
+
 <a name="installation"></a>
 ## Installation
 
-Coming soon to [crates.io](https://crates.io/).
+### With cargo
+
+If you have [cargo](https://www.rust-lang.org/tools/install) installed, you can install `mom` with the following command:
+
+```console
+$ cargo install mom-task
+```
 
 Pro-tip: make sure `~/.cargo/bin` directory is in your `PATH` environment variable.
 
@@ -136,24 +148,22 @@ After having a mom file, you can run a task by calling `mom`, the name of the ta
 <a name="usage"></a>
 ## Usage
 
+
 <a name="command-line-options"></a>
 ### Command line options
-You can see some help about the command line options by running `mom -h` or `mom --help`. Essentially, the
-usage would be like this:
 
-```
-Usage: mom [OPTIONS] [COMMAND]
+If you want to pass command line options to `mom` itself, they must be passed before the task name, any argument
+after the task name will be considered an argument for the task. For example, if you want to run global tasks, you
+need to pass the `-g` or `--global` flag before the task name, i.e. `mom -g say_hi`, not `mom say_hi -g`.
 
-Options:
-  -l, --list              Lists configuration files that can be reached from the current directory
-  -t, --list-tasks        Lists tasks
-  -i, --task-info <TASK>  Displays information about the given task
-      --dry               Runs the task in dry mode, i.e. without executing any commands
-  -f, --file <FILE>       Search for tasks in the given file
-  -g, --global            Search for tasks in ~/mom/mom.global.{yml,yaml}
-  -h, --help              Print help
-  -V, --version           Print version
-```
+Some of the command line options can be combined, i.e. `mom -gt` (or `mom -g -t`) will give you a list of global tasks, and
+`mom -gl` will give you the location of the global task file.
+
+If you want to use a non standard task file, you can use the `-f` or `--file` option, i.e. `mom -f my_tasks.yml say_hi`.
+
+To run a task in dry mode, i.e. without executing any commands, you can use the `--dry` flag, i.e. `mom --dry say_hi`.
+
+You can see some extra command line options by running `mom -h` or `mom --help`.
 
 
 <a name="task-files"></a>
