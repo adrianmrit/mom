@@ -21,7 +21,7 @@
     * [dotenv](#dotenv)
     * [incl](#incl)
   * [Tasks File Properties](#tasks-file-properties)
-    * [version](#version)
+    * [version](#tasks-file-properties)
     * [tasks](#tasks)
     * [extend](#file_extend)
   * [Task Properties](#task-properties)
@@ -303,9 +303,9 @@ See the also the [include](https://tera.netlify.app/docs/#include) documentation
 
 Besides the [common properties](#common-properties), the following properties can be defined in the task file:
 - [tasks](#tasks): The tasks defined in the file.
-- version: The version of the file. Although not used at the moment, it is required for future compatibility. The version
-  can be a number or string. At the moment backward compatibility with version 1 was not implemented. Therefore, at the
-  moment of writing this, the version should be `2`.
+- version: The mayor version of the file. Although not used at the moment, it is required for future compatibility. The version
+  can be a number or string. At the moment of writing this, the version should be `1`.
+- [extend](#file_extend): Mom files to inherit from.
 
 
 <a name="tasks"></a>
