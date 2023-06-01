@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.1.0 - 2023-06-01
 
 ### Added
 - Add option to install with homebrew
