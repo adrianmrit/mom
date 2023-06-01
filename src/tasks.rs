@@ -625,7 +625,7 @@ impl Task {
                 let task_name = &self.name;
                 let template_name = format!("tasks.{task_name}.args");
                 tera_instance.add_raw_template(&template_name, args)?;
-                let rendered_args = tera_instance.render(&template_name, &tera_context)?;
+                let rendered_args = tera_instance.render(&template_name, tera_context)?;
                 split_command(&rendered_args)
             }
         };
@@ -660,7 +660,7 @@ impl Task {
         let template_name = &format!("tasks.{task_name}");
         tera_instance.add_raw_template(template_name, cmd)?;
 
-        let cmd = tera_instance.render(template_name, &tera_context);
+        let cmd = tera_instance.render(template_name, tera_context);
         let cmd = cmd?;
         let cmd_args = split_command(&cmd);
         let program = &cmd_args[0];
@@ -787,7 +787,7 @@ impl Task {
         let task_name = &self.name;
         let template_name = format!("tasks.{task_name}.script");
         tera_instance.add_raw_template(&template_name, script)?;
-        let script = tera_instance.render(&template_name, &tera_context)?;
+        let script = tera_instance.render(&template_name, tera_context)?;
         let default_script_extension = String::from(DEFAULT_SCRIPT_EXTENSION);
         let script_extension = self
             .script_extension
@@ -833,7 +833,7 @@ impl Task {
         let script_runner_template_name = format!("tasks.{task_name}.script_runner");
         tera_instance.add_raw_template(&script_runner_template_name, script_runner)?;
 
-        let script_runner = tera_instance.render(&script_runner_template_name, &tera_context)?;
+        let script_runner = tera_instance.render(&script_runner_template_name, tera_context)?;
         let script_runner_values = split_command(&script_runner);
 
         let mut command = Command::new(&script_runner_values[0]);
