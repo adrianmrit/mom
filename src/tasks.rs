@@ -17,6 +17,7 @@ use crate::inherit_option_value;
 use crate::mom_files::MomFile;
 use crate::print_utils::{MomOutput, INFO_COLOR};
 use crate::serde_common::CommonFields;
+use crate::tera::get_tera_instance;
 use colored::Colorize;
 use serde::{de, Deserialize, Serialize};
 
@@ -505,7 +506,7 @@ impl Task {
 
     // Returns the Tera instance for the Tera template engine.
     fn get_tera_instance(&self, mom_file: &MomFile) -> Result<tera::Tera, TaskError> {
-        let mut tera = tera::Tera::default();
+        let mut tera = get_tera_instance();
         for (name, template) in mom_file.common.incl.iter() {
             tera.add_raw_template(&format!("incl.{name}"), template)?;
         }

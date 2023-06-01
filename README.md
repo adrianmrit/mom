@@ -42,6 +42,9 @@
     * [extend](#task_extend)
   * [OS specific tasks](#os-specific-tasks)
   * [Passing arguments](#passing-arguments)
+  * [Tera template engine](#tera-template-engine)
+    * [Mom filters](#custom-filters)
+    * [Mom functions](#custom-functions)
 * [Contributing](#contributing)
 
 
@@ -149,6 +152,12 @@ tasks:
   sum:
     cmds:
       - echo "{{ args.0 }} + {{ args.1 }} = {{ args.0 | int + args.1 | int }}"
+  
+  swear:
+    condition: |
+      {{ input(label="Are you sure you want to say that? (yes/no)") | lower == 'yes' }}
+    cmds:
+      - echo "!@#$%^&*()"
 ```
 
 After having a mom file, you can run a task by calling `mom`, the name of the task, and any arguments, i.e.
@@ -396,7 +405,7 @@ Unlike comments, help will be printed when running `mom -i <TASK>`.
 ##### condition
 
 The `condition` property is used to define a condition to execute the task. The value of the property is a string
-containing a [Tera](https://tera.netlify.app/docs/) template. If the template evaluates to `true`, the task will be executed,
+containing a [Tera](#tera-template-engine) template. If the template evaluates to `true`, the task will be executed,
 otherwise it will be skipped.
 
 Only `true` (case insensitive) values are considered true, all other values are considered false. This is because Tera conditions
@@ -605,10 +614,6 @@ of letters, digits, `-` or `_`. The value will be either the next argument or th
 `--name "John Doe"`, `--name-person1="John Doe"`, `-name_person1 John` are all valid. Note that `"--name John"` is not
 a named argument because it is surrounded by quotes and contains a space, however `"--name=John"` is valid named argument.
 
-The first versions used a custom parser, but it takes a lot of work to maintain and it is not as powerful.
-So now the template engine used is [Tera](https://tera.netlify.app/docs/). The syntax is
-based on Jinja2 and Django templates. The syntax is very easy and powerful.
-
 The exported variables are:
 - `args`: The arguments passed to the task. If the task is called with `mom say_hi arg1 --name "John"`, then
   `args` will be `["arg1", "--name", "John"]`.
@@ -629,7 +634,10 @@ Thus, it is recommended to pass positional arguments first.
 In you want to pass all the command line arguments, you can use `{{ args | join(sep=" ") }}`, or `{% for arg in args %} "{{ arg }}" {% %}`
 if you want to quote them.
 
-You can check the [Tera documentation](https://tera.netlify.app/docs/#introduction) for more information. Just ignore the Rust specific parts.
+See also:
+  - [Tera template engine](#tera-template-engine)
+  - [custom filters](#custom-filters)
+  - [functions](#custom-functions).
 
 
 <a name="env-and-vars-inheritance"></a>
@@ -725,6 +733,58 @@ var1 subtask_var2 test2_var3
 This is the output of the fourth command in the `test1` task, which calls a subtask. `ENV1` and `VAR1` are only defined in the file.
 While it might seem like we are calling `task2`, we actually defined a new task that inherits from `task2` and overrides `ENV2` and `VAR2`.
 Therefore, the values inherited from `task2` will take precedence over the parent task.
+
+
+<a name="tera-template-engine"></a>
+### Tera template engine
+
+The template engine used is [Tera](https://tera.netlify.app/docs/). The syntax is
+based on Jinja2 and Django templates. The docs contain all the information needed and
+is very straightforward, so won't repeat it here. Just ignore the rust specific parts.
+
+See also:
+- [Mom filters](#custom-filters)
+- [Mom functions](#custom-functions)
+
+
+<a name="custom-filters"></a>
+#### Mom filters
+
+- `exclude`: Exclude a value from a list or map. The value can be a string, or a list of strings.
+  ```yaml
+  tasks:
+    test:
+      vars:
+        var1: "value1"
+        var2: "value2"
+        var3: "value3"
+      script: echo "{{ env | exclude(val='var2') | json_encode() }} {{ [1, 2, 3] | exclude(val=2) }}"
+  ```
+  Output:
+  ```console
+  $ mom test
+  {"var1": "value1", "var3": "value3"} [1, 3]
+  ```
+
+
+<a name="custom-functions"></a>
+#### Mom functions
+
+- `input`: Asks for user input. Takes a label and a default argument, both of which must be a string.
+  ```yaml
+  tasks:
+    test:
+      script: echo "{{ input(label='What is your name?', default='John Doe') }}"
+  ```
+  Output:
+  ```console
+  $ mom test
+  What is your name? [John Doe]: 
+  ```
+  ```console
+  $ mom test
+  What is your name? [John Doe]: Jane Doe
+  ```
 
 
 <a name="Contributing"></a>
