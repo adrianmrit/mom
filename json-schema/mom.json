@@ -77,6 +77,10 @@
                             "description": "Help for the task",
                             "type": "string"
                         },
+                        "condition": {
+                            "description": "The condition to run the task",
+                            "type": "string"
+                        },
                         "incl": {
                             "$ref": "#/$defs/v2/incl"
                         },
