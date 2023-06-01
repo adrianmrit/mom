@@ -26,6 +26,7 @@
     * [extend](#file_extend)
   * [Task Properties](#task-properties)
     * [help](#help)
+    * [condition](#condition)
     * [script](#script)
     * [script_runner](#script_runner)
     * [script_extension](#script_extension)
@@ -391,6 +392,37 @@ containing the help message.
 Unlike comments, help will be printed when running `mom -i <TASK>`.
 
 
+<a name="condition"></a>
+##### condition
+
+The `condition` property is used to define a condition to execute the task. The value of the property is a string
+containing a [Tera](https://tera.netlify.app/docs/) template. If the template evaluates to `true`, the task will be executed,
+otherwise it will be skipped.
+
+Only `true` (case insensitive) values are considered true, all other values are considered false. This is because Tera conditions
+will return ether `true` or `false`.
+
+Example:
+```yaml
+tasks:
+  say_hi:
+    condition: "{{ env.ENVIRONMENT == 'production' }}"  # will evaluate to true if ENVIRONMENT is production, false otherwise
+    script: echo "Hi!"
+```
+
+This can also be handy to choose between different tasks depending on some condition, i.e.
+```yaml
+tasks:
+  greet:
+    cmds:
+      - task:
+          condition: "{{ env.ENVIRONMENT == 'production' }}"
+          script: echo "Hi!"
+      - task:
+          condition: "{{ env.ENVIRONMENT != 'production' }}"
+          script: echo "Bye!"
+```
+
 <a name="script"></a>
 #### Script
 
@@ -496,6 +528,7 @@ The tasks are merged, with the parent task taking precedence over the base task.
 The inherited values are:
 - [wd](#wd)
 - [help](#help)
+- [condition](#condition)
 - [script](#script)
 - [script_runner](#script_runner)
 - [script_extension](#script_extension)

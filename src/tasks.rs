@@ -185,6 +185,35 @@ impl<'de> de::Deserialize<'de> for Cmd {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct TaskCondition(String);
+
+impl TaskCondition {
+    pub(crate) fn holds(
+        &self,
+        task_name: &str,
+        tera: &mut tera::Tera,
+        context: &tera::Context,
+    ) -> Result<bool, AwareTaskError> {
+        let template_name = format!("{}.condition", task_name);
+        tera.add_raw_template(&template_name, &self.0)
+            .map_err(|e| {
+                AwareTaskError::new(
+                    task_name,
+                    TaskError::ConfigError(format!("Invalid condition: {}", e)),
+                )
+            })?;
+        let result = tera.render(&template_name, context).map_err(|e| {
+            AwareTaskError::new(
+                task_name,
+                TaskError::ConfigError(format!("Invalid condition: {}", e)),
+            )
+        })?;
+        let result = result.trim().to_lowercase();
+        Ok(result == "true")
+    }
+}
+
 /// Represents a Task
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
@@ -195,6 +224,9 @@ pub(crate) struct Task {
 
     #[serde(flatten)]
     pub(crate) common: CommonFields,
+
+    /// Condition to run the task
+    condition: Option<TaskCondition>,
 
     /// Help of the task
     help: Option<String>,
@@ -300,12 +332,43 @@ impl Task {
         let env = self.get_env(&mom_file.common.env);
         let vars = self.get_vars(&mom_file.common.vars);
 
+        let mut tera_instance = self
+            .get_tera_instance(mom_file)
+            .map_err(|e| AwareTaskError::new(&self.name, e))?;
+        let mut tera_context = self.get_tera_context(args, mom_file, &env, &vars);
+
+        if let Some(condition) = &self.condition {
+            if !condition.holds(&self.name, &mut tera_instance, &tera_context)? {
+                println!("{}", format!("{} skipped", &self.name).mom_info());
+                return Ok(());
+            }
+        }
+
         let result = if self.script.is_some() {
-            self.run_script(args, mom_file, &env, &vars, dry_run)
+            self.run_script(
+                mom_file,
+                &env,
+                &mut tera_instance,
+                &mut tera_context,
+                dry_run,
+            )
         } else if self.program.is_some() {
-            self.run_program(args, mom_file, &env, &vars, dry_run)
+            self.run_program(
+                mom_file,
+                &env,
+                &mut tera_instance,
+                &mut tera_context,
+                dry_run,
+            )
         } else if self.cmds.is_some() {
-            self.run_cmds(args, mom_file, &env, &vars, dry_run)
+            self.run_cmds(
+                args,
+                mom_file,
+                &env,
+                &mut tera_instance,
+                &mut tera_context,
+                dry_run,
+            )
         } else {
             Err(TaskError::ConfigError(String::from("Nothing to run.")))
         };
@@ -332,6 +395,7 @@ impl Task {
         inherit_option_value!(self.program, base_task.program);
         inherit_option_value!(self.args, base_task.args);
         inherit_option_value!(self.cmds, base_task.cmds);
+        inherit_option_value!(self.condition, base_task.condition);
         self.common.extend(&base_task.common);
 
         if self.args_extend.is_some() {
@@ -544,26 +608,23 @@ impl Task {
     /// Runs a program
     fn run_program(
         &self,
-        args: &ArgsContext,
         mom_file: &MomFile,
         env: &HashMap<String, String>,
-        vars: &HashMap<String, serde_yaml::Value>,
+        tera_instance: &mut tera::Tera,
+        tera_context: &mut tera::Context,
         dry_mode: bool,
     ) -> Result<(), TaskError> {
         let program = self.program.as_ref().unwrap();
         let mut command = Command::new(program);
         self.set_command_basics(&mut command, mom_file, env)?;
 
-        let mut tera = self.get_tera_instance(mom_file)?;
-        let context = self.get_tera_context(args, mom_file, env, vars);
-
         let args_list = match &self.args {
             None => vec![],
             Some(args) => {
                 let task_name = &self.name;
                 let template_name = format!("tasks.{task_name}.args");
-                tera.add_raw_template(&template_name, args)?;
-                let rendered_args = tera.render(&template_name, &context)?;
+                tera_instance.add_raw_template(&template_name, args)?;
+                let rendered_args = tera_instance.render(&template_name, &tera_context)?;
                 split_command(&rendered_args)
             }
         };
@@ -587,21 +648,18 @@ impl Task {
         &self,
         cmd: &str,
         cmd_index: usize,
-        args: &ArgsContext,
         mom_file: &MomFile,
         env: &HashMap<String, String>,
-        vars: &HashMap<String, serde_yaml::Value>,
+        tera_instance: &mut tera::Tera,
+        tera_context: &mut tera::Context,
         dry_run: bool,
     ) -> Result<(), TaskError> {
-        let mut tera = self.get_tera_instance(mom_file)?;
-        let context = self.get_tera_context(args, mom_file, env, vars);
-
         let task_name = &self.name;
         let task_name = &format!("{task_name}.cmds.{cmd_index}");
         let template_name = &format!("tasks.{task_name}");
-        tera.add_raw_template(template_name, cmd)?;
+        tera_instance.add_raw_template(template_name, cmd)?;
 
-        let cmd = tera.render(template_name, &context);
+        let cmd = tera_instance.render(template_name, &tera_context);
         let cmd = cmd?;
         let cmd_args = split_command(&cmd);
         let program = &cmd_args[0];
@@ -694,13 +752,14 @@ impl Task {
         args: &ArgsContext,
         mom_file: &MomFile,
         env: &HashMap<String, String>,
-        vars: &HashMap<String, serde_yaml::Value>,
+        tera_instance: &mut tera::Tera,
+        tera_context: &mut tera::Context,
         dry_run: bool,
     ) -> Result<(), TaskError> {
         for (i, cmd) in self.cmds.as_ref().unwrap().iter().enumerate() {
             match cmd {
                 Cmd::Cmd(cmd) => {
-                    self.run_cmds_cmd(cmd, i, args, mom_file, env, vars, dry_run)?;
+                    self.run_cmds_cmd(cmd, i, mom_file, env, tera_instance, tera_context, dry_run)?;
                 }
                 Cmd::TaskName(task_name) => {
                     self.run_cmds_task_name(task_name, i, args, mom_file, dry_run)?;
@@ -716,20 +775,18 @@ impl Task {
     /// Runs a script
     fn run_script(
         &self,
-        args: &ArgsContext,
         mom_file: &MomFile,
         env: &HashMap<String, String>,
-        vars: &HashMap<String, serde_yaml::Value>,
+        tera_instance: &mut tera::Tera,
+        tera_context: &mut tera::Context,
         dry_run: bool,
     ) -> Result<(), TaskError> {
         let script = self.script.as_ref().unwrap();
 
-        let mut tera = self.get_tera_instance(mom_file)?;
-        let mut context = self.get_tera_context(args, mom_file, env, vars);
         let task_name = &self.name;
         let template_name = format!("tasks.{task_name}.script");
-        tera.add_raw_template(&template_name, script)?;
-        let script = tera.render(&template_name, &context)?;
+        tera_instance.add_raw_template(&template_name, script)?;
+        let script = tera_instance.render(&template_name, &tera_context)?;
         let default_script_extension = String::from(DEFAULT_SCRIPT_EXTENSION);
         let script_extension = self
             .script_extension
@@ -758,9 +815,9 @@ impl Task {
             {
                 let script_path = script_path.to_str().unwrap();
                 let script_path = script_path.replace('\\', "\\\\");
-                context.insert("script_path", &script_path);
+                tera_context.insert("script_path", &script_path);
             } else {
-                context.insert("script_path", &script_path);
+                tera_context.insert("script_path", &script_path);
             }
         }
 
@@ -773,9 +830,9 @@ impl Task {
         };
 
         let script_runner_template_name = format!("tasks.{task_name}.script_runner");
-        tera.add_raw_template(&script_runner_template_name, script_runner)?;
+        tera_instance.add_raw_template(&script_runner_template_name, script_runner)?;
 
-        let script_runner = tera.render(&script_runner_template_name, &context)?;
+        let script_runner = tera_instance.render(&script_runner_template_name, &tera_context)?;
         let script_runner_values = split_command(&script_runner);
 
         let mut command = Command::new(&script_runner_values[0]);

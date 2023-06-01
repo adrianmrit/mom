@@ -744,3 +744,48 @@ test.cmds.1: echo HELLO and bye
     ));
     Ok(())
 }
+
+#[test]
+fn test_task_condition() -> Result<(), Box<dyn std::error::Error>> {
+    let tmp_dir = TempDir::new().unwrap();
+
+    let mut file = File::create(tmp_dir.join("mom.root.yml"))?;
+    file.write_all(
+        r#"
+version: 1
+
+tasks:
+    task1:
+        condition: "{{ args.0 == \"t1\" }}"
+        cmds:
+            - echo "task1 executed"
+    
+    task2:
+        condition: "{{ args.0 == \"t2\" }}"
+        cmds: 
+            - echo "task2 executed"
+    
+    run:
+        cmds:
+            - task: task1
+            - task: task2
+"#
+        .as_bytes(),
+    )?;
+
+    let mut cmd = Command::cargo_bin("mom")?;
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("--dry");
+    cmd.arg("run");
+    cmd.arg("t2");
+    cmd.assert().success().stdout(predicate::str::contains(
+        format!(
+            r#"run.cmds.0.task1 skipped
+run.cmds.1.task2.cmds.0: echo "task2 executed"
+{DRY_RUN_MESSAGE}
+"#
+        )
+        .mom_just_prefix(),
+    ));
+    Ok(())
+}
