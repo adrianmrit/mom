@@ -64,6 +64,15 @@ uses a more familiar name for the binary, pun intended.
 <a name="installation"></a>
 ## Installation
 
+### Homebrew
+
+If you have [homebrew](https://brew.sh/) installed, you can install `mom` with:
+
+```console
+$ brew tap adrianmrit/mom
+$ brew install mom
+```
+
 ### With cargo
 
 If you have [cargo](https://www.rust-lang.org/tools/install) installed, you can install `mom` with the following command:
