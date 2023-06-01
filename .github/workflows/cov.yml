@@ -29,6 +29,7 @@ jobs:
 
       - name: Install kcov
         run: |
+          sudo apt-get update &&
           sudo apt-get install -y libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev
           wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
           tar xzf master.tar.gz &&
