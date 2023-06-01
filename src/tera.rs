@@ -4,18 +4,19 @@ mod tera_test;
 
 use std::{collections::HashMap, io::Write};
 
+use crate::print_utils::MomOutput;
 use tera::{Error, Value};
 
 #[cfg(test)]
 const USER_INPUT: &str = "something";
 
-fn exclude<'a, 'b>(val: &'a Value, params: &'b HashMap<String, Value>) -> Result<Value, Error> {
+fn exclude(val: &Value, params: &HashMap<String, Value>) -> Result<Value, Error> {
     let value_to_exclude = match params.get("val") {
         Some(value) => value,
         None => return Err(Error::msg("val parameter is required")),
     };
 
-    let result = match val {
+    match val {
         Value::Array(array) => {
             let mut result = Vec::new();
             for item in array {
@@ -37,8 +38,7 @@ fn exclude<'a, 'b>(val: &'a Value, params: &'b HashMap<String, Value>) -> Result
         _ => Err(Error::msg(
             "exclude filter can only be used on arrays and objects",
         )),
-    };
-    result
+    }
 }
 
 #[cfg(test)]
@@ -73,9 +73,10 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
 
             while input.is_empty() {
                 match default {
-                    Some(default) => {
-                        print!("{} [{}]: ", label, default);
+                    Some(Value::String(default)) => {
+                        print!("{}", format!("{} [{}]: ", label, default).mom_just_prefix());
                     }
+                    Some(_) => unreachable!("Should have validated that default is a string"),
                     None => print!("{}: ", label),
                 }
                 // flush stdout so the prompt is shown
