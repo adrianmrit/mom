@@ -6,7 +6,7 @@ use super::get_tera_instance;
 
 #[test]
 fn test_exclude_filter() {
-    let mut tera = get_tera_instance();
+    let mut tera = get_tera_instance(HashMap::new());
 
     let result = tera
         .render_str(
@@ -42,7 +42,7 @@ fn test_exclude_filter() {
 
 #[test]
 fn test_input_function() {
-    let mut tera = get_tera_instance();
+    let mut tera = get_tera_instance(HashMap::new());
 
     let result = tera
         .render_str(
@@ -62,4 +62,61 @@ fn test_input_function() {
         &tera::Context::new(),
     );
     assert!(result.is_err());
+}
+
+#[test]
+fn test_get_env() {
+    let env: HashMap<String, String> =
+        HashMap::from_iter(vec![("TEST_VAR".to_string(), "test_value".to_string())]);
+
+    let mut tera = get_tera_instance(env);
+
+    let result = tera
+        .render_str(r#"{{ get_env(name="TEST_VAR") }}"#, &tera::Context::new())
+        .unwrap();
+
+    assert_eq!(result, "test_value");
+
+    // Test missing no default
+    let result = tera.render_str(
+        r#"{{ get_env(name="MOM_NON_EXISTENT") }}"#,
+        &tera::Context::new(),
+    );
+    assert!(result.is_err());
+
+    // Test with default
+    let result = tera.render_str(
+        r#"{{ get_env(name="MOM_NON_EXISTENT", default="other") }}"#,
+        &tera::Context::new(),
+    );
+    assert_eq!(result.unwrap(), "other");
+
+    // Test with missing parameter
+    let result = tera.render_str(r#"{{ get_env() }}"#, &tera::Context::new());
+    assert!(result.is_err());
+
+    // Test with non string default
+    let result = tera.render_str(
+        r#"{{ get_env(name="MOM_NON_EXISTENT", default=1) }}"#,
+        &tera::Context::new(),
+    );
+    assert_eq!(result.unwrap(), "1");
+
+    // Test with non string name
+    let result = tera.render_str(
+        r#"{{ get_env(name=1, default="other") }}"#,
+        &tera::Context::new(),
+    );
+    assert!(result.is_err());
+
+    // Test system env
+    let env_var_value = "test_value";
+    std::env::set_var("MOM_SYSTEM_TEST_VAR", env_var_value);
+    let result = tera
+        .render_str(
+            r#"{{ get_env(name="MOM_SYSTEM_TEST_VAR") }}"#,
+            &tera::Context::new(),
+        )
+        .unwrap();
+    assert_eq!(result, env_var_value);
 }

@@ -5,7 +5,7 @@ mod tera_test;
 use std::{collections::HashMap, io::Write};
 
 use crate::print_utils::MomOutput;
-use tera::{Error, Value};
+use tera::{Error, Function, Value};
 
 #[cfg(test)]
 const USER_INPUT: &str = "something";
@@ -73,10 +73,9 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
 
             while input.is_empty() {
                 match default {
-                    Some(Value::String(default)) => {
+                    Some(default) => {
                         print!("{}", format!("{} [{}]: ", label, default).mom_just_prefix());
                     }
-                    Some(_) => unreachable!("Should have validated that default is a string"),
                     None => print!("{}: ", label),
                 }
                 // flush stdout so the prompt is shown
@@ -96,11 +95,55 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
     }
 }
 
+/// Returns a function that can be used to get environment variables
+/// from the task, or system environment variables if the task does
+/// not have the variable.
+///
+/// # Arguments
+///
+/// * `env`: HashMap of environment variables
+///
+/// returns: Function
+fn make_get_env(env: HashMap<String, String>) -> impl Function {
+    Box::new(
+        move |args: &HashMap<String, Value>| -> tera::Result<Value> {
+            let name_arg = match args.get("name") {
+                Some(Value::String(value)) => value,
+                Some(_) => return Err(Error::msg("name parameter must be a string")),
+                None => return Err(Error::msg("name parameter is required")),
+            };
+
+            let default = match args.get("default") {
+                Some(value) => Some(value),
+                None => None,
+            };
+
+            match env.get(name_arg) {
+                Some(value) => Ok(Value::String(value.clone())),
+                None => match std::env::var(name_arg) {
+                    Ok(value) => Ok(Value::String(value)),
+                    Err(_) => {
+                        if let Some(default) = default {
+                            Ok(default.clone())
+                        } else {
+                            return Err(Error::msg(format!(
+                                "Environment variable `{}` not found",
+                                name_arg
+                            )));
+                        }
+                    }
+                },
+            }
+        },
+    )
+}
+
 /// Returns a Tera instance with all the filters registered
 /// and ready to be used.
-pub(crate) fn get_tera_instance() -> tera::Tera {
+pub(crate) fn get_tera_instance(env: HashMap<String, String>) -> tera::Tera {
     let mut tera = tera::Tera::default();
     tera.register_filter("exclude", exclude);
     tera.register_function("input", input);
+    tera.register_function("get_env", make_get_env(env));
     tera
 }

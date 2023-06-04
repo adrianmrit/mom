@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     mem,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use serde::{Deserialize, Serialize};
@@ -79,7 +79,7 @@ impl<'a> Iterator for StringOrVecStringIter<'a> {
 pub(crate) struct CommonFields {
     /// Working directory. Defaults to the folder where the script runs.
     #[serde(default)]
-    pub(crate) wd: Option<PathBuf>,
+    pub(crate) wd: Option<String>,
 
     /// Env variables for all the tasks.
     #[serde(default)]

@@ -43,8 +43,11 @@
   * [OS specific tasks](#os-specific-tasks)
   * [Passing arguments](#passing-arguments)
   * [Tera template engine](#tera-template-engine)
-    * [Mom filters](#custom-filters)
-    * [Mom functions](#custom-functions)
+    * [Mom filters](#mom-filters)
+      * [exclude](#exclude)
+    * [Mom functions](#mom-functions)
+      * [input](#input)
+      * [get_env](#get_env)
 * [Contributing](#contributing)
 
 
@@ -246,7 +249,18 @@ and the value is the value of the environment variable.
 
 The value defined in the executed task takes precedence over the value defined in the file.
 
+Generally environment variables can be accessed in three ways, with tera tags, i.e. `{{ env.VAR }}`, wherever they
+are supported, with the tera function [get_env](#get_env), i.e. `{{ get_env(name="VAR", default="default") }}`, or through
+[shell expansion](#shell-expansion), i.e. `$VAR` or `${VAR}`. However note that shell
+expansion is not available inside tera tags.
+
+Note that when accessing environment variables with tera tags (i.e. `{{ env.VAR }}`), system environment variables
+are not available, only the ones defined in the file or task. To access system environment variables, use the
+[get_env](#get_env) function or use [shell expansion](#shell-expansion).
+
 See also:
+- [get_env](#get_env)
+- [shell expansion](#shell-expansion)
 - [dotenv](#dotenv)
 - [env and vars inheritance](#env-and-vars-inheritance)
 
@@ -453,7 +467,7 @@ as a cache.
 
 The `script_runner` property is used to define the template to parse the script program and arguments. Must contain
 a program and a `{{ script_path }}` template, i.e. `python {{ script_path }}`. Arguments are separated in the same way
-as [args](#args).
+as [args](#args). This parameter supports expanding environment variables like `$A
 
 
 <a name="script_extension"></a>
@@ -636,8 +650,8 @@ if you want to quote them.
 
 See also:
   - [Tera template engine](#tera-template-engine)
-  - [custom filters](#custom-filters)
-  - [functions](#custom-functions).
+  - [custom filters](#mom-filters)
+  - [functions](#mom-functions).
 
 
 <a name="env-and-vars-inheritance"></a>
@@ -735,6 +749,26 @@ While it might seem like we are calling `task2`, we actually defined a new task 
 Therefore, the values inherited from `task2` will take precedence over the parent task.
 
 
+<a name="shell-expansion"></a>
+### Shell expansion
+
+Some task properties support shell-like expansion. The following characters are expanded:
+- `~`: The home directory.
+- `$VAR`: The value of the environment variable `VAR`.
+- `${VAR}`: The value of the environment variable `VAR`.
+
+Note that while environment variables can be expanded this way, they will not be available in tera templates. I.e.
+`{{ $VAR }}` will raise an error. You can use instead `{{ env.VAR }}`. See also [env] (#env).
+
+The following task properties support shell expansion:
+- [wd](#wd)
+- [program](#program)
+- [args](#args)
+- [args_extend](#args_extend)
+- [script_runner](#script)
+- [cmds](#cmds)
+
+
 <a name="tera-template-engine"></a>
 ### Tera template engine
 
@@ -743,14 +777,19 @@ based on Jinja2 and Django templates. The docs contain all the information neede
 is very straightforward, so won't repeat it here. Just ignore the rust specific parts.
 
 See also:
-- [Mom filters](#custom-filters)
-- [Mom functions](#custom-functions)
+- [Mom filters](#mom-filters)
+- [Mom functions](#mom-functions)
 
 
-<a name="custom-filters"></a>
+<a name="mom-filters"></a>
 #### Mom filters
 
-- `exclude`: Exclude a value from a list or map. The value can be a string, or a list of strings.
+<a name="exclude"></a>
+##### exclude
+
+Exclude a value from a list or map. The value can be a string, or a list of strings.
+
+Example:
   ```yaml
   tasks:
     test:
@@ -767,10 +806,16 @@ See also:
   ```
 
 
-<a name="custom-functions"></a>
+<a name="mom-functions"></a>
 #### Mom functions
 
-- `input`: Asks for user input. Takes a label and a default argument, both of which must be a string.
+<a name="input"></a>
+##### input
+
+Asks for user input. Takes a `label` and a `default` argument. While `label` must be a string,
+`default` can be any type.
+
+Example:
   ```yaml
   tasks:
     test:
@@ -786,6 +831,30 @@ See also:
   What is your name? [John Doe]: Jane Doe
   ```
 
+
+<a name="get_env"></a>
+##### get_env
+
+We override the default implementation so that this method also returns the environment variables
+defined in the mom file, which take precedence over system environment variables. Takes a `name`
+argument which must be a string, and an optional `default` argument which can be any type.
+
+Example:
+  ```yaml
+  tasks:
+    test:
+      script: echo "{{ get_env(name='VAR1', default='default') }}"
+  ```
+  Output:
+  ```console
+  $ mom test
+  default
+  ```
+  ```console
+  $ VAR1="value1"
+  $ mom test
+  value1
+  ```
 
 <a name="Contributing"></a>
 ## Contributing

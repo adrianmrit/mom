@@ -5,7 +5,9 @@ mod utils_test;
 use crate::tasks::Task;
 use crate::types::DynErrResult;
 use dotenv_parser::parse_dotenv;
+use lazy_static::lazy_static;
 use petgraph::graphmap::DiGraphMap;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::env::current_dir;
 use std::ffi::OsStr;
@@ -14,6 +16,22 @@ use std::{env, fs};
 
 /// To uniquely identify the temporary folder. Constant so that the scripts are cached.
 pub(crate) const TMP_FOLDER_NAMESPACE: &str = "adrianmrit.mom";
+
+#[cfg(test)]
+lazy_static! {
+    static ref HOME_DIR: String = {
+        let tmp_dir = assert_fs::TempDir::new().unwrap();
+        tmp_dir.path().to_string_lossy().to_string()
+    };
+}
+
+#[cfg(not(test))]
+lazy_static! {
+    static ref HOME_DIR: String = match directories::UserDirs::new() {
+        Some(user_dirs) => user_dirs.home_dir().to_string_lossy().to_string(),
+        None => "".to_string(),
+    };
+}
 
 /// Shortcut to inherit values from the task
 #[macro_export]
@@ -198,15 +216,15 @@ pub(crate) fn split_command(val: &str) -> Vec<String> {
 }
 
 // Joins the commands, quoting those with spaces and escaping quotes and backslashes.
-pub(crate) fn join_commands(commands: &[String]) -> String {
+pub(crate) fn join_commands(commands: &[impl AsRef<str>]) -> String {
     let mut result = String::new();
     for (i, command) in commands.iter().enumerate() {
         if i > 0 {
             result.push(' ');
         }
-        if command.contains(' ') {
+        if command.as_ref().contains(' ') {
             result.push('"');
-            for c in command.chars() {
+            for c in command.as_ref().chars() {
                 match c {
                     '"' | '\\' => {
                         result.push('\\');
@@ -217,8 +235,50 @@ pub(crate) fn join_commands(commands: &[String]) -> String {
             }
             result.push('"');
         } else {
-            result.push_str(command);
+            result.push_str(command.as_ref());
         }
     }
     result
+}
+
+/// Expands the given string using the given environment variables, falling back to the system
+/// environment variables.
+/// It also expands the home directory.
+/// If the variable or home dir is not found, it will be replaced by an empty string.
+///
+/// # Arguments
+/// * `val`: String to expand
+/// * `env`: Environment variables set in the config file
+/// returns: Cow<'a, str>
+pub(crate) fn expand_arg<'a, S: AsRef<str> + ?Sized>(
+    // Accept &str and String
+    arg: &'a S,
+    env: &HashMap<String, String>,
+) -> Cow<'a, str> {
+    let get_env = |name: &str| match env.get(name) {
+        Some(val) => Some(Cow::Borrowed(val.as_str())),
+        None => match env::var(name) {
+            Ok(val) => Some(Cow::Owned(val)),
+            Err(_) => Some(Cow::Borrowed("")),
+        },
+    };
+    let home_dir = || Some(HOME_DIR.as_str());
+    shellexpand::full_with_context_no_errors(arg, home_dir, get_env)
+}
+
+/// Expands the given arguments using the given environment variables, falling back to the system
+/// environment variables.
+/// It also expands the home directory.
+/// If the variable or home dir is not found, it will be replaced by an empty string.
+///
+/// # Arguments
+/// * `args`: Arguments to expand
+/// * `env`: Environment variables set in the config file
+/// returns: Vec<Cow<'a, str>>
+pub(crate) fn expand_args<'a>(
+    // Accept [&str] and [String]
+    args: &'a [impl AsRef<str>],
+    env: &HashMap<String, String>,
+) -> Vec<Cow<'a, str>> {
+    args.iter().map(|arg| expand_arg(arg, env)).collect()
 }

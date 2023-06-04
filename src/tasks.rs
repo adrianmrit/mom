@@ -2,6 +2,7 @@
 #[path = "tasks_test.rs"]
 mod tasks_test;
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::env::temp_dir;
 use std::fs::File;
@@ -22,7 +23,10 @@ use colored::Colorize;
 use serde::{de, Deserialize, Serialize};
 
 use crate::types::DynErrResult;
-use crate::utils::{get_working_directory, join_commands, split_command, TMP_FOLDER_NAMESPACE};
+use crate::utils::{
+    expand_arg, expand_args, get_working_directory, join_commands, split_command,
+    TMP_FOLDER_NAMESPACE,
+};
 use md5::{Digest, Md5};
 
 pub const DRY_RUN_MESSAGE: &str = "Dry run mode, nothing executed.";
@@ -334,7 +338,7 @@ impl Task {
         let vars = self.get_vars(&mom_file.common.vars);
 
         let mut tera_instance = self
-            .get_tera_instance(mom_file)
+            .get_tera_instance(mom_file, env.clone())
             .map_err(|e| AwareTaskError::new(&self.name, e))?;
         let mut tera_context = self.get_tera_context(args, mom_file, &env, &vars);
 
@@ -505,8 +509,12 @@ impl Task {
     }
 
     // Returns the Tera instance for the Tera template engine.
-    fn get_tera_instance(&self, mom_file: &MomFile) -> Result<tera::Tera, TaskError> {
-        let mut tera = get_tera_instance();
+    fn get_tera_instance(
+        &self,
+        mom_file: &MomFile,
+        env: HashMap<String, String>,
+    ) -> Result<tera::Tera, TaskError> {
+        let mut tera = get_tera_instance(env);
         for (name, template) in mom_file.common.incl.iter() {
             tera.add_raw_template(&format!("incl.{name}"), template)?;
         }
@@ -555,14 +563,15 @@ impl Task {
         command.stderr(Stdio::inherit());
         command.stdin(Stdio::inherit());
 
-        let mom_file_folder = &mom_file.directory;
-
         let wd = match &self.common.wd {
             None => mom_file.common.wd.as_ref(),
             Some(wd) => Some(wd),
         };
 
         if let Some(wd) = wd {
+            let wd = expand_arg(wd, env);
+            let wd = Path::new(wd.as_ref());
+            let mom_file_folder = &mom_file.directory;
             // wd may be absolute or relative to the mom file folder
             let wd = get_working_directory(mom_file_folder, wd);
             command.current_dir(wd);
@@ -616,7 +625,11 @@ impl Task {
         dry_mode: bool,
     ) -> Result<(), TaskError> {
         let program = self.program.as_ref().unwrap();
-        let mut command = Command::new(program);
+
+        // In case the program is specified with ~ or $HOME, or something like that
+        let program = expand_arg(program, env);
+
+        let mut command = Command::new(program.as_ref());
         self.set_command_basics(&mut command, mom_file, env)?;
 
         let args_list = match &self.args {
@@ -633,7 +646,9 @@ impl Task {
             println!("{}", format!("{}: {}", self.name, program).mom_info());
         } else {
             let display_args = join_commands(&args_list);
-            command.args(args_list);
+            let args = expand_args(&args_list, env);
+            let args = args.iter().map(|s| s.as_ref());
+            command.args(args);
 
             println!(
                 "{}",
@@ -663,11 +678,21 @@ impl Task {
         let cmd = tera_instance.render(template_name, tera_context);
         let cmd = cmd?;
         let cmd_args = split_command(&cmd);
-        let program = &cmd_args[0];
+        let cmd_args: Vec<Cow<str>> = expand_args(&cmd_args, env);
+        let cmd_args: Vec<&str> = cmd_args.iter().map(|s| s.as_ref()).collect();
+        let program = match cmd_args.get(0) {
+            Some(program) => program,
+            None => {
+                return Err(TaskError::RuntimeError(format!(
+                    "Error running task: {}",
+                    "No program specified"
+                )))
+            }
+        };
         let program_args = &cmd_args[1..];
         let mut command: Command = Command::new(program);
         self.set_command_basics(&mut command, mom_file, env)?;
-        command.args(program_args.iter());
+        command.args(program_args);
 
         println!(
             "{}",
@@ -835,13 +860,16 @@ impl Task {
 
         let script_runner = tera_instance.render(&script_runner_template_name, tera_context)?;
         let script_runner_values = split_command(&script_runner);
+        let script_runner_values = expand_args(&script_runner_values, env);
+        let script_runner_values: Vec<&str> =
+            script_runner_values.iter().map(|s| s.as_ref()).collect();
+        let program = script_runner_values[0];
+        let args = &script_runner_values[1..];
 
-        let mut command = Command::new(&script_runner_values[0]);
+        let mut command = Command::new(program);
 
         // The script runner might not contain the actual script path, but we just leave it as a feature ;)
-        if script_runner_values.len() > 1 {
-            command.args(script_runner_values[1..].iter());
-        }
+        command.args(args);
 
         self.set_command_basics(&mut command, mom_file, env)?;
 
