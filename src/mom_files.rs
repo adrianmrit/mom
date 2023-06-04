@@ -180,7 +180,7 @@ impl MomFile {
         // macro to avoid repeating code
         macro_rules! insert_os_task {
             ($os_task:expr, $parent_name:expr, $os_name:expr) => {
-                let os_task = std::mem::replace(&mut $os_task, None);
+                let os_task = std::mem::take(&mut $os_task);
                 let mut os_task = *os_task.unwrap();
                 let os_task_name = format!("{}.{}", $parent_name, $os_name);
                 if flat_tasks.contains_key(&os_task_name) {

@@ -404,7 +404,7 @@ impl Task {
         self.common.extend(&base_task.common);
 
         if self.args_extend.is_some() {
-            let new_args = mem::replace(&mut self.args_extend, None).unwrap();
+            let new_args = mem::take(&mut self.args_extend).unwrap();
             if self.args.is_none() {
                 self.args = mem::replace(&mut self.args, Some(String::new()));
             }
@@ -680,7 +680,7 @@ impl Task {
         let cmd_args = split_command(&cmd);
         let cmd_args: Vec<Cow<str>> = expand_args(&cmd_args, env);
         let cmd_args: Vec<&str> = cmd_args.iter().map(|s| s.as_ref()).collect();
-        let program = match cmd_args.get(0) {
+        let program = match cmd_args.first() {
             Some(program) => program,
             None => {
                 return Err(TaskError::RuntimeError(format!(

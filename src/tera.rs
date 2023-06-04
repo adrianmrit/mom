@@ -113,10 +113,7 @@ fn make_get_env(env: HashMap<String, String>) -> impl Function {
                 None => return Err(Error::msg("name parameter is required")),
             };
 
-            let default = match args.get("default") {
-                Some(value) => Some(value),
-                None => None,
-            };
+            let default = args.get("default");
 
             match env.get(name_arg) {
                 Some(value) => Ok(Value::String(value.clone())),
@@ -126,10 +123,10 @@ fn make_get_env(env: HashMap<String, String>) -> impl Function {
                         if let Some(default) = default {
                             Ok(default.clone())
                         } else {
-                            return Err(Error::msg(format!(
+                            Err(Error::msg(format!(
                                 "Environment variable `{}` not found",
                                 name_arg
-                            )));
+                            )))
                         }
                     }
                 },
