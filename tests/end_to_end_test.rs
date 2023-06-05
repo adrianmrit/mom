@@ -789,3 +789,34 @@ run.cmds.1.task2.cmds.0: echo "task2 executed"
     ));
     Ok(())
 }
+
+#[test]
+fn test_echo_builtin() {
+    let tmp_dir = TempDir::new().unwrap();
+
+    let mut file = File::create(tmp_dir.join("mom.root.yml")).unwrap();
+    file.write_all(
+        r#"
+version: 1
+
+tasks:
+    test:
+        cmds:
+            - echo "hello world"
+
+"#
+        .as_bytes(),
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("mom").unwrap();
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("test");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            r#"test.cmds.0: echo "hello world"
+hello world
+"#
+        )));
+}

@@ -12,6 +12,7 @@ use std::process::{Command, Stdio};
 use std::{fmt, fs, mem};
 
 use crate::args::ArgsContext;
+use crate::builtin_commands::get_builtin_command;
 use crate::defaults::default_false;
 use crate::errors::{AwareTaskError, TaskError};
 use crate::inherit_option_value;
@@ -689,16 +690,23 @@ impl Task {
                 )))
             }
         };
+        // We print the clean commands, not the rendered ones. For a nicer output.
+        let command_info = format!("{task_name}: {}", join_commands(&cmd_args)).mom_info();
+
+        // We need to do some refactoring, dry_run should not be dependent on the Command instance.
+        if !dry_run {
+            if let Some(builtin_command) = get_builtin_command(program) {
+                println!("{}", command_info);
+                return builtin_command(&cmd_args[1..])
+                    .map_err(|e| TaskError::RuntimeError(format!("Error running task: {}", e)));
+            }
+        }
         let program_args = &cmd_args[1..];
         let mut command: Command = Command::new(program);
         self.set_command_basics(&mut command, mom_file, env)?;
         command.args(program_args);
 
-        println!(
-            "{}",
-            // We print the clean commands, not the rendered ones. For a nicer output.
-            format!("{task_name}: {}", join_commands(&cmd_args)).mom_info()
-        );
+        println!("{}", command_info);
         self.spawn_command(&mut command, dry_run)
     }
 

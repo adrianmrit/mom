@@ -4,6 +4,7 @@ extern crate core;
 pub mod cli;
 
 pub(crate) mod args;
+pub(crate) mod builtin_commands;
 mod defaults;
 pub(crate) mod errors;
 pub(crate) mod mom_file_paths;

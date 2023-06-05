@@ -150,7 +150,8 @@ tasks:
       - echo {{ vars.greeting }}
   
   hi.windows:
-    script: echo {{ vars.greeting }} from Windows
+    cmds:
+      - echo {{ vars.greeting }} from Windows
   
   sum:
     cmds:
@@ -499,7 +500,8 @@ in the same form as `args`.
 The `cmds` value is a list of commands to execute. Each command can be either a string, or a map with a `task` key.
 
 If the command is a string, it will be executed as a program, with the first value being the program, and the
-rest being the arguments. Arguments are separated in the same way as [args](#args).
+rest being the arguments. Arguments are separated in the same way as [args](#args). For convenience, `echo` is
+a built-in in mom, so that the same command works properly in Windows and Unix.
 
 If the command is a map, the value of `task` can be either the name of a task to execute, or the definition of a
 task to execute.
@@ -511,7 +513,8 @@ tasks:
     script: echo "hi"
 
   say_bye:
-    script: echo "bye"
+    cmds:
+      - echo "bye"
   
   greet:
     cmds:
