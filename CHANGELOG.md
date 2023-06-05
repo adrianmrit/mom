@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## v1.2.0 - 2023-06-05
 
-### v1.2.0 - 2023-06-05
+### Changed
 - Some task parameters support environment variables and tilde expansion
 - `get_env` function can now return the environment variables defined in the task or file, which
 takes precedence over the system environment variables.
