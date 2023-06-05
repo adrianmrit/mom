@@ -200,6 +200,7 @@ impl TaskCondition {
         task_name: &str,
         tera: &mut tera::Tera,
         context: &tera::Context,
+        env: &HashMap<String, String>,
     ) -> Result<bool, AwareTaskError> {
         let template_name = format!("{}.condition", task_name);
         tera.add_raw_template(&template_name, &self.0)
@@ -215,6 +216,7 @@ impl TaskCondition {
                 TaskError::ConfigError(format!("Invalid condition: {}", e)),
             )
         })?;
+        let result = expand_arg(&result, env);
         let result = result.trim().to_lowercase();
         Ok(result == "true")
     }
@@ -344,7 +346,7 @@ impl Task {
         let mut tera_context = self.get_tera_context(args, mom_file, &env, &vars);
 
         if let Some(condition) = &self.condition {
-            if !condition.holds(&self.name, &mut tera_instance, &tera_context)? {
+            if !condition.holds(&self.name, &mut tera_instance, &tera_context, &env)? {
                 println!("{}", format!("{} skipped", &self.name).mom_info());
                 return Ok(());
             }

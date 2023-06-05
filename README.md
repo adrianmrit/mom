@@ -42,6 +42,7 @@
     * [extend](#task_extend)
   * [OS specific tasks](#os-specific-tasks)
   * [Passing arguments](#passing-arguments)
+  * [Shell expansion](#shell-expansion)
   * [Tera template engine](#tera-template-engine)
     * [Mom filters](#mom-filters)
       * [exclude](#exclude)
@@ -765,6 +766,7 @@ Note that while environment variables can be expanded this way, they will not be
 
 The following task properties support shell expansion:
 - [wd](#wd)
+- [condition](#condition)
 - [program](#program)
 - [args](#args)
 - [args_extend](#args_extend)
