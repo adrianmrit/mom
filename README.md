@@ -453,7 +453,7 @@ tasks:
 
 **⚠️Warning:**
 DO NOT PASS SENSITIVE INFORMATION AS PARAMETERS IN SCRIPTS. Scripts are stored in a file in the temporal
-directory of the system and is the job of the OS to delete it, however it is not guaranteed that when or if that would
+directory of the system and is the job of the OS to delete it, however it is not guaranteed when or if that would
 be the case. So any sensitive argument passed could be persisted indefinitely.
 
 The `script` value inside a task will be executed in the command line (defaults to cmd in Windows
@@ -818,7 +818,9 @@ Example:
 ##### input
 
 Asks for user input. Takes a `label` and a `default` argument. While `label` must be a string,
-`default` can be any type.
+`default` can be any type. An `if` argument can also be provided, which must be a boolean, and
+must be accompanied by a `default` argument. If `if` is `false`, the `default` argument will be
+returned without asking for user input.
 
 Example:
   ```yaml
@@ -831,10 +833,25 @@ Example:
   $ mom test
   What is your name? [John Doe]: 
   ```
-  ```console
-  $ mom test
-  What is your name? [John Doe]: Jane Doe
+  
+  ```yaml
+  tasks:
+    test:
+      script: echo "{{ input(label='What is your name?', default='John Doe', if=args is containing("--default")) }}"
   ```
+  ```console
+  $ mom test --default
+  John Doe
+  ```
+
+<a name="password"></a>
+##### password
+
+⚠️Warning: If used in a [script](#script), the password will be added in plain text to the script file. Use
+with caution.
+
+Like [input](#input), but the input is not echoed to the terminal.
+
 
 
 <a name="get_env"></a>

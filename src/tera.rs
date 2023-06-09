@@ -54,7 +54,7 @@ fn get_user_input(buffer: &mut String) -> Result<(), Error> {
 }
 
 /// Prompts the user for input and returns the value as a string.
-fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
+fn generic_input(args: &HashMap<String, Value>, secret: bool) -> Result<Value, Error> {
     let label = match args.get("label") {
         Some(value) => value,
         None => return Err(Error::msg("label parameter is required")),
@@ -64,6 +64,29 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
     if let Some(default) = default {
         if !default.is_string() {
             return Err(Error::msg("default parameter must be a string"));
+        }
+    }
+
+    let trim = match args.get("trim") {
+        Some(Value::Bool(value)) => value,
+        Some(_) => return Err(Error::msg("trim parameter must be a boolean")),
+        None => &true,
+    };
+
+    let condition = match args.get("if") {
+        Some(Value::Bool(value)) => value,
+        Some(_) => return Err(Error::msg("if parameter must be a boolean")),
+        None => &true,
+    };
+
+    if !condition {
+        match default {
+            Some(default) => return Ok(default.clone()),
+            None => {
+                return Err(Error::msg(
+                    "A default value is required with `if` parameter",
+                ))
+            }
         }
     }
 
@@ -80,8 +103,17 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
                 }
                 // flush stdout so the prompt is shown
                 std::io::stdout().flush().unwrap();
-                get_user_input(&mut input)?;
-                input = input.trim().to_string();
+
+                if secret {
+                    input = rpassword::read_password().map_err(|e| Error::msg(e.to_string()))?
+                } else {
+                    get_user_input(&mut input)?;
+                }
+
+                if *trim {
+                    input = input.trim().to_string();
+                }
+
                 if input.is_empty() {
                     if let Some(default) = default {
                         return Ok(default.clone());
@@ -93,6 +125,14 @@ fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
         }
         _ => Err(Error::msg("label parameter must be a string")),
     }
+}
+
+fn input(args: &HashMap<String, Value>) -> Result<Value, Error> {
+    generic_input(args, false)
+}
+
+fn password(args: &HashMap<String, Value>) -> Result<Value, Error> {
+    generic_input(args, true)
 }
 
 /// Returns a function that can be used to get environment variables
@@ -141,6 +181,7 @@ pub(crate) fn get_tera_instance(env: HashMap<String, String>) -> tera::Tera {
     let mut tera = tera::Tera::default();
     tera.register_filter("exclude", exclude);
     tera.register_function("input", input);
+    tera.register_function("password", password);
     tera.register_function("get_env", make_get_env(env));
     tera
 }

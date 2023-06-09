@@ -20,3 +20,8 @@ tasks:
     cmds:
       # This doesn't seem to work properly though
       - brew install kcov
+
+  pass:
+    help: "Do nothing"
+    cmds:
+      - echo "{{ password(label="Sample password", if=false, default="password") }}"
