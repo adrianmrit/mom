@@ -6,7 +6,6 @@
 - Added a new `password` tera function. Similar to `input`, but does not echo the input to the
 terminal.
 
-
 ### Changed
 - `input` now supports an `if` parameter, which can be used to skip the prompt if the condition is
 not met.
