@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.3.0 - 2023-06-14
+
+### Added
+- Added a new `password` tera function. Similar to `input`, but does not echo the input to the
+terminal.
+
+
+### Changed
+- `input` now supports an `if` parameter, which can be used to skip the prompt if the condition is
+not met.
+
 ## v1.2.0 - 2023-06-05
 
 ### Changed
@@ -11,7 +22,7 @@ takes precedence over the system environment variables.
 ## v1.1.0 - 2023-06-01
 
 ### Added
-- Add option to install with homebrew
+- Added option to install with homebrew
 - Added `condition` option to tasks
 - Added `exclude` tera filter
 - Added `input` tera function

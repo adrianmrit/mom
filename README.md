@@ -818,9 +818,11 @@ Example:
 ##### input
 
 Asks for user input. Takes a `label` and a `default` argument. While `label` must be a string,
-`default` can be any type. An `if` argument can also be provided, which must be a boolean, and
-must be accompanied by a `default` argument. If `if` is `false`, the `default` argument will be
-returned without asking for user input.
+`default` can be any type. 
+
+An `if` argument can also be provided, which must be a boolean, and must be accompanied by a
+`default` argument. If `if` is `false`, the `default` argument will be returned without asking
+for user input. This is a shorthand for `if` statements in the template.
 
 Example:
   ```yaml
@@ -847,7 +849,7 @@ Example:
 <a name="password"></a>
 ##### password
 
-⚠️Warning: If used in a [script](#script), the password will be added in plain text to the script file. Use
+⚠️Warning: If used in a [script](#script), the password will still be added in plain text to the script file. Use
 with caution.
 
 Like [input](#input), but the input is not echoed to the terminal.
