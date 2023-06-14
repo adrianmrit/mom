@@ -48,6 +48,7 @@
       * [exclude](#exclude)
     * [Mom functions](#mom-functions)
       * [input](#input)
+      * [password](#password)
       * [get_env](#get_env)
 * [Contributing](#contributing)
 
