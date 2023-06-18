@@ -22,6 +22,8 @@ regex = "1.8"
 cfg-if = "1.0"
 colored = "2.0"
 serde_yaml = "0.9"
+serde_json = "1.0"
+toml = "0.7"
 lazy_static = "1.4"
 serde = {version = "1.0", features = ["derive"]}
 petgraph = "0.6"
@@ -32,8 +34,8 @@ indexmap = "1.9"
 directories = { version = "5.0" }
 md-5 = "0.10"  # Used for caching
 tera = "1.18" # Used for templating
-shellexpand = "3.1.0"
-rpassword = "7.2.0"
+shellexpand = "3.1"
+rpassword = "7.2"
 
 [dev-dependencies]
 assert_cmd = "2.0"

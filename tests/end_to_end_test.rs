@@ -280,20 +280,19 @@ version: 1
 dotenv: ".env"
 
 tasks:
-    test.windows:
-        script: "echo %VAR1% %VAR2% %VAR3%"
-
     test:
-        script: "echo $VAR1 $VAR2 $VAR3"
-
-    test_2.windows:
-        script: "echo %VAR1% %VAR2% %VAR3%"
-        dotenv: ".env_2"
-        env: {VAR1: "TASK_VAL1"}
+        cmds:
+        - "echo $VAR1 $VAR2 $VAR3"
 
     test_2:
-        script: echo $VAR1 $VAR2 $VAR3
-        dotenv: [".env_2"]
+        cmds:
+            - echo $VAR1 $VAR2 $VAR3
+        dotenv:
+            - path: ".env_2"
+              required: false
+              overwrite: true
+            - path: ".non_existent_env_file"
+              required: false
         env:
             VAR1: "TASK_VAL1"
             "#
@@ -312,9 +311,80 @@ tasks:
     cmd.arg("test_2");
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("TASK_VAL1 OTHER_VAL2 VAL3"));
+        .stdout(predicate::str::contains("OTHER_VAL1 OTHER_VAL2 VAL3"));
 
     Ok(())
+}
+
+#[test]
+fn test_vars_file() {
+    let tmp_dir = TempDir::new().unwrap();
+    let mut vars_file = File::create(tmp_dir.join("vars.yml")).unwrap();
+    vars_file
+        .write_all(
+            r#"
+    VAR1: YAML_OTHER_VAL1
+    "#
+            .as_bytes(),
+        )
+        .unwrap();
+
+    let other_vars_file = tmp_dir.join("other_vars.json");
+    let mut vars_file = File::create(&other_vars_file).unwrap();
+    vars_file
+        .write_all(
+            r#"
+    {
+        "VAR2": "JSON_OTHER_VAL2"
+    }
+    "#
+            .as_bytes(),
+        )
+        .unwrap();
+
+    let mut file = File::create(tmp_dir.join("mom.root.yml")).unwrap();
+    file.write_all(
+        r#"
+version: 1
+
+vars:
+    VAR1: VAL1
+    VAR2: VAL2
+    VAR3: VAL3
+    
+tasks:
+    test:
+        cmds:
+            - echo {{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}
+        vars_file: "vars.yml"
+    
+    test2:
+        cmds:
+            - echo {{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}
+        vars_file: 
+            - "vars.yml"
+            - path: "other_vars.json"
+              overwrite: true
+            - path: "non_existent_vars_file.json"
+              required: false
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("mom").unwrap();
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("test");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("VAL1 VAL2 VAL3"));
+
+    let mut cmd = Command::cargo_bin("mom").unwrap();
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("test2");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("JSON_OTHER_VAL2 VAL3"));
 }
 
 #[test]

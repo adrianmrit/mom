@@ -180,6 +180,86 @@ pub(crate) fn read_env_file<S: AsRef<OsStr> + ?Sized>(
     }
 }
 
+fn read_json_file<S: AsRef<OsStr> + ?Sized>(
+    path: &S,
+) -> DynErrResult<BTreeMap<String, serde_json::Value>> {
+    let path = Path::new(path);
+    let result = match fs::read_to_string(path) {
+        Ok(content) => serde_json::from_str(&content),
+        Err(err) => {
+            return Err(format!("Failed to read json file at {}: {}", path.display(), err).into())
+        }
+    };
+
+    match result {
+        Ok(envs) => Ok(envs),
+        Err(err) => Err(format!("Failed to parse json file at {}: {}", path.display(), err).into()),
+    }
+}
+
+fn read_yaml_file<S: AsRef<OsStr> + ?Sized>(
+    path: &S,
+) -> DynErrResult<BTreeMap<String, serde_json::Value>> {
+    let path = Path::new(path);
+    let result = match fs::read_to_string(path) {
+        Ok(content) => serde_yaml::from_str(&content),
+        Err(err) => {
+            return Err(format!("Failed to read yaml file at {}: {}", path.display(), err).into())
+        }
+    };
+
+    match result {
+        Ok(envs) => Ok(envs),
+        Err(err) => Err(format!("Failed to parse yaml file at {}: {}", path.display(), err).into()),
+    }
+}
+
+fn read_toml_file<S: AsRef<OsStr> + ?Sized>(
+    path: &S,
+) -> DynErrResult<BTreeMap<String, serde_json::Value>> {
+    let path = Path::new(path);
+    let result = match fs::read_to_string(path) {
+        Ok(content) => toml::from_str(&content),
+        Err(err) => {
+            return Err(format!("Failed to read toml file at {}: {}", path.display(), err).into())
+        }
+    };
+
+    match result {
+        Ok(envs) => Ok(envs),
+        Err(err) => Err(format!("Failed to parse toml file at {}: {}", path.display(), err).into()),
+    }
+}
+
+/// Reads json, yaml, toml or env file depending on the file extension and returns a BTreeMap.
+pub(crate) fn read_vars_file<S: AsRef<OsStr> + ?Sized>(
+    path: &S,
+) -> DynErrResult<BTreeMap<String, serde_json::Value>> {
+    // Reads json, yaml, toml or env file depending on the file extension
+    let path = Path::new(path);
+    let extension = path.extension().unwrap_or_default();
+    let extension = extension.to_string_lossy().to_lowercase();
+
+    match extension.as_ref() {
+        "json" => read_json_file(path),
+        "yaml" | "yml" => read_yaml_file(path),
+        "toml" => read_toml_file(path),
+        "env" => {
+            let env_map = read_env_file(path)?;
+            let mut map = BTreeMap::new();
+            for (key, value) in env_map {
+                map.insert(key, serde_json::Value::String(value));
+            }
+            Ok(map)
+        }
+        _ => Err(format!(
+            "Unsupported file extension for vars file at {}",
+            path.display()
+        )
+        .into()),
+    }
+}
+
 /// Split a command into its arguments. This is a very simple implementation
 /// but it should be enough for most cases.
 pub(crate) fn split_command(val: &str) -> Vec<String> {

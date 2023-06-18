@@ -19,6 +19,8 @@
     * [wd](#wd)
     * [env](#env)
     * [dotenv](#dotenv)
+    * [vars](#vars)
+    * [vars_file](#vars_file)
     * [incl](#incl)
   * [Tasks File Properties](#tasks-file-properties)
     * [version](#tasks-file-properties)
@@ -271,11 +273,40 @@ See also:
 <a name="dotenv"></a>
 ##### dotenv
 
-The `dotenv` property is used to define environment variables that will be available to all tasks in the file.
-The value of the property is a string, or list of strings containing the path to the files containing the environment
-variables. The path can be absolute or relative to the location of the file.
+The `dotenv` property is used to load environment variables from files. The value of the property is a path,
+or, a list of paths or objects. If the value is an object, it can have the following
+properties:
+- `path`: The path to the file containing the environment variables.
+- `required`: Whether the file is required or not. Defaults to `true`.
+- `overwrite`: Whether the variables defined in the file should overwrite the ones defined in the file. Defaults
+to `false`.
 
-The value defined in the `env` property take precedence over the value defined using the `dotenv` property.
+The `required` and `overwrite` properties are particularly useful to allow users to define their own environment
+variables without having to modify the task file.
+
+Examples:
+
+Single file:
+```yaml
+dotenv: .env
+```
+
+Multiple files:
+```yaml
+dotenv:
+  - .env
+  - .env.local
+```
+
+With options:
+```yaml
+dotenv:
+  - path: .env
+    required: false
+    overwrite: true
+  - path: .env.local
+    overwrite: true
+```
 
 
 <a name="vars"></a>
@@ -302,6 +333,52 @@ tasks:
     cmd: echo "Hi, {{ vars.user.name }}!"
 ```
 
+<a name="vars_file"></a>
+#### vars_file
+
+The `vars_file` property is used to define variables that will be available to all tasks in the file. This behaves like
+the [dotenv](#dotenv) property, but the variables are not exported to the environment, and can be more complex than
+strings.
+
+The following formats are supported:
+- YAML
+- JSON
+- TOML
+- .env
+
+The value of the property is a path, or, a list of paths or objects. If the value is an object, it can have the
+following properties:
+- `path`: The path to the file containing the variables.
+- `required`: Whether the file is required or not. Defaults to `true`.
+- `overwrite`: Whether the variables defined in the file should overwrite the ones defined in the file. Defaults
+to `false`.
+
+The `required` and `overwrite` properties are particularly useful to allow users to define their own variables
+without having to modify the task file.
+
+Examples:
+
+Single file:
+```yaml
+vars_file: vars.yml
+```
+
+Multiple files:
+```yaml
+vars_file:
+  - vars.yml
+  - vars.local.json
+```
+
+With options:
+```yaml
+vars_file:
+  - path: vars.yml
+    required: false
+    overwrite: true
+  - path: vars.local.json
+    overwrite: true
+```
 
 <a name="incl"></a>
 ##### incl
@@ -670,7 +747,7 @@ For example, if you have the following file:
 ```yaml
 version: 1
 
-# Default values. The tasks can override these values.
+# Default values. The tasks can overwrite these values.
 env:
   ENV1: "env1"
   ENV2: "env2"
@@ -736,21 +813,21 @@ env1 test1_env2 test1_env3
 var1 test1_var2 test1_var3
 ```
 This is the output of the first two commands in the `test1` task. `ENV1` and `VAR1` are only defined in the file, while the
-task overrides `ENV2`, `ENV3`, `VAR2` and `VAR3`.
+task overwrites `ENV2`, `ENV3`, `VAR2` and `VAR3`.
 
 ```console
 env1 test1_env2 test1_env3
 var1 test1_var2 test1_var3
 ```
 This is the output of the third command in the `test1` task, which calls `test2`. Again, `ENV1` and `VAR1` are only defined in the file.
-Even though `test2` overrides `ENV2`, `ENV3`, `VAR2` and `VAR3`, the values defined in `test1`, the parent task, take precedence.
+Even though `test2` overwrites `ENV2`, `ENV3`, `VAR2` and `VAR3`, the values defined in `test1`, the parent task, take precedence.
 
 ```console
 env1 subtask_env2 test2_env3
 var1 subtask_var2 test2_var3
 ```
 This is the output of the fourth command in the `test1` task, which calls a subtask. `ENV1` and `VAR1` are only defined in the file.
-While it might seem like we are calling `task2`, we actually defined a new task that inherits from `task2` and overrides `ENV2` and `VAR2`.
+While it might seem like we are calling `task2`, we actually defined a new task that inherits from `task2` and overwrites `ENV2` and `VAR2`.
 Therefore, the values inherited from `task2` will take precedence over the parent task.
 
 

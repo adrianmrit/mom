@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added `vars_file` option to load json, yaml, toml or .env files as variables
+
+### Changed
+- The dotenv option can take a list of file paths or objects, where the object must have a path
+and optionally the `required` and `overwrite` properties.
+
 ## v1.3.0 - 2023-06-14
 
 ### Added

@@ -187,3 +187,186 @@ fn test_expand_args() {
     let expanded_args = expand_args(&args, &envs);
     assert_eq!(expanded_args, expected);
 }
+
+#[test]
+fn test_read_vars_file_json() {
+    let tmp_dir = TempDir::new().unwrap();
+    let json_file_path = tmp_dir.path().join("vars.json");
+    let mut file = File::create(&json_file_path).unwrap();
+    file.write_all(
+        r#"
+    {
+        "TEST_VAR": "test_value"
+    }
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&json_file_path).unwrap();
+
+    assert_eq!(
+        vars_map.get("TEST_VAR").unwrap(),
+        &serde_json::Value::String(String::from("test_value"))
+    );
+
+    // Test invalid json
+    let mut file = File::create(&json_file_path).unwrap();
+    file.write_all(
+        r#"
+    {
+        "TEST_VAR" "test_value"
+    }
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&json_file_path);
+    assert!(vars_map.is_err());
+
+    // Test invalid json structure
+    let mut file = File::create(&json_file_path).unwrap();
+    file.write_all(
+        r#"
+    [1, 2, 3, 4]
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&json_file_path);
+    assert!(vars_map.is_err());
+}
+
+#[test]
+fn test_read_vars_file_yaml() {
+    let tmp_dir = TempDir::new().unwrap();
+    let yaml_file_path = tmp_dir.path().join("vars.yaml");
+    let mut file = File::create(&yaml_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR: test_value
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&yaml_file_path).unwrap();
+
+    assert_eq!(
+        vars_map.get("TEST_VAR").unwrap(),
+        &serde_json::Value::String(String::from("test_value"))
+    );
+
+    // Test invalid yaml
+    let mut file = File::create(&yaml_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR test_value
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&yaml_file_path);
+    assert!(vars_map.is_err());
+
+    // Test invalid yaml structure
+    let mut file = File::create(&yaml_file_path).unwrap();
+    file.write_all(
+        r#"
+    - 1
+    - 2
+    - 3
+    - 4
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&yaml_file_path);
+    assert!(vars_map.is_err());
+}
+
+#[test]
+fn test_read_vars_file_toml() {
+    let tmp_dir = TempDir::new().unwrap();
+    let toml_file_path = tmp_dir.path().join("vars.toml");
+    let mut file = File::create(&toml_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR = "test_value"
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&toml_file_path).unwrap();
+
+    assert_eq!(
+        vars_map.get("TEST_VAR").unwrap(),
+        &serde_json::Value::String(String::from("test_value"))
+    );
+
+    // Test invalid toml
+    let mut file = File::create(&toml_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR "test_value"
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&toml_file_path);
+    assert!(vars_map.is_err());
+
+    // Test invalid toml structure
+    let mut file = File::create(&toml_file_path).unwrap();
+    file.write_all(
+        r#"
+    [1, 2, 3, 4]
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&toml_file_path);
+    assert!(vars_map.is_err());
+}
+
+#[test]
+fn test_read_vars_file_env() {
+    let tmp_dir = TempDir::new().unwrap();
+    let env_file_path = tmp_dir.path().join("vars.env");
+    let mut file = File::create(&env_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR=test_value
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&env_file_path).unwrap();
+
+    assert_eq!(
+        vars_map.get("TEST_VAR").unwrap(),
+        &serde_json::Value::String(String::from("test_value"))
+    );
+
+    // Test invalid env
+    let mut file = File::create(&env_file_path).unwrap();
+    file.write_all(
+        r#"
+    TEST_VAR "test_value"
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&env_file_path);
+    assert!(vars_map.is_err());
+
+    // Test invalid env structure
+    let mut file = File::create(&env_file_path).unwrap();
+    file.write_all(
+        r#"
+    [1, 2, 3, 4]
+    "#
+        .as_bytes(),
+    )
+    .unwrap();
+    let vars_map = read_vars_file(&env_file_path);
+    assert!(vars_map.is_err());
+}
