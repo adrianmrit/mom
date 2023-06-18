@@ -286,15 +286,22 @@ tasks:
 
     test_2:
         cmds:
-            - echo $VAR1 $VAR2 $VAR3
+            - echo $VAR1 $VAR2 $VAR3 ${INTO1.VAR1} ${INTO2.VAR2}
         dotenv:
             - path: ".env_2"
               required: false
               overwrite: true
+            - path: ".env"
+              into: "INTO1."
+              overwrite: true
+            - path: ".env_2"
+              into: "INTO2."
             - path: ".non_existent_env_file"
               required: false
         env:
             VAR1: "TASK_VAL1"
+            INTO1.VAR1: "TASK_VAL1"
+            INTO2.VAR2: "TASK_VAL2"
             "#
         .as_bytes(),
     )?;
@@ -309,9 +316,9 @@ tasks:
     let mut cmd = Command::cargo_bin("mom")?;
     cmd.current_dir(tmp_dir.path());
     cmd.arg("test_2");
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("OTHER_VAL1 OTHER_VAL2 VAL3"));
+    cmd.assert().success().stdout(predicate::str::contains(
+        "OTHER_VAL1 OTHER_VAL2 VAL3 VAL1 TASK_VAL2",
+    ));
 
     Ok(())
 }
@@ -367,6 +374,26 @@ tasks:
               overwrite: true
             - path: "non_existent_vars_file.json"
               required: false
+    test3:
+        vars:
+            inner1:
+                VAR1: OTHER_VAL1
+                VAR1_1: OTHER_VAL1.1
+            inner2:
+                VAR2: VAL2
+        vars_file: 
+            - path: "vars.yml"
+              overwrite: true
+              into: "inner1"
+            - path: "other_vars.json"
+              overwrite: false
+              into: "inner2"
+            - path: "other_vars.json"
+              into: "inner3"
+            - path: "non_existent_vars_file.json"
+              required: false
+        cmds:
+            - echo {{ vars.inner1.VAR1 }} {{ vars.inner1.VAR1_1 }} {{ vars.inner2.VAR2 }} {{ vars.inner3.VAR2 }}
     "#
         .as_bytes(),
     )
@@ -385,6 +412,13 @@ tasks:
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("JSON_OTHER_VAL2 VAL3"));
+
+    let mut cmd = Command::cargo_bin("mom").unwrap();
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("test3");
+    cmd.assert().success().stdout(predicate::str::contains(
+        "YAML_OTHER_VAL1 OTHER_VAL1.1 VAL2 JSON_OTHER_VAL2",
+    ));
 }
 
 #[test]

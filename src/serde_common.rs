@@ -83,6 +83,9 @@ pub(crate) struct VarsFileSpec {
     /// Whether the variables from the file should overwrite the existing ones or not
     #[serde(default = "default_false")]
     overwrite: bool,
+    /// If True, the variables from the file will be added to the variables under the specified key.
+    #[serde(default)]
+    into: Option<String>,
 }
 
 impl From<String> for VarsFileSpec {
@@ -91,6 +94,7 @@ impl From<String> for VarsFileSpec {
             path,
             required: false,
             overwrite: false,
+            into: None,
         }
     }
 }
@@ -152,7 +156,7 @@ pub(crate) struct CommonFields {
 
     /// Variables to be used around in the mom file
     #[serde(default)]
-    pub(crate) vars: HashMap<String, serde_json::Value>,
+    pub(crate) vars: serde_json::map::Map<String, serde_json::Value>,
 
     /// Variables file to read variables from
     #[serde(default)]
@@ -191,17 +195,27 @@ impl CommonFields {
         for env_file in envfiles.into_iter() {
             let overwrite = env_file.overwrite;
             let required = env_file.required;
+            let into = env_file.into;
             let env_file = get_path_relative_to_base(base_path, &env_file.path);
             if !required && !env_file.exists() {
                 continue;
             }
             let env_variables = read_env_file(env_file.as_path())?;
+
             if overwrite {
                 for (key, val) in env_variables {
+                    let key = match &into {
+                        Some(into) => format!("{}{}", into, key),
+                        None => key,
+                    };
                     self.env.insert(key, val);
                 }
             } else {
                 for (key, val) in env_variables {
+                    let key = match &into {
+                        Some(into) => format!("{}{}", into, key),
+                        None => key,
+                    };
                     self.env.entry(key).or_insert(val);
                 }
             }
@@ -212,18 +226,50 @@ impl CommonFields {
         for vars_file in varsfiles.into_iter() {
             let overwrite = vars_file.overwrite;
             let required = vars_file.required;
+            let into = vars_file.into;
             let vars_file = get_path_relative_to_base(base_path, &vars_file.path);
             if !required && !vars_file.exists() {
                 continue;
             }
             let vars = read_vars_file(vars_file.as_path())?;
-            if overwrite {
-                for (key, val) in vars {
-                    self.vars.insert(key, val);
+
+            let target_map = if let Some(into) = &into {
+                if overwrite {
+                    Some(
+                        self.vars
+                            .entry(into.clone())
+                            .and_modify(|e| {
+                                if !e.is_object() {
+                                    *e = serde_json::json!({});
+                                }
+                            })
+                            .or_insert_with(|| serde_json::json!({}))
+                            .as_object_mut()
+                            .unwrap(),
+                    )
+                } else {
+                    if !self.vars.contains_key(into) {
+                        self.vars.insert(into.clone(), serde_json::json!({}));
+                        Some(self.vars.get_mut(into).unwrap().as_object_mut().unwrap())
+                    } else if self.vars.get(into).unwrap().is_object() {
+                        Some(self.vars.get_mut(into).unwrap().as_object_mut().unwrap())
+                    } else {
+                        None
+                    }
                 }
             } else {
-                for (key, val) in vars {
-                    self.vars.entry(key).or_insert_with(|| val);
+                Some(&mut self.vars)
+            };
+
+            if let Some(target) = target_map {
+                if overwrite {
+                    for (key, val) in vars {
+                        target.insert(key, val);
+                    }
+                } else {
+                    for (key, val) in vars {
+                        target.entry(key).or_insert(val);
+                    }
                 }
             }
         }

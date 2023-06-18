@@ -7,7 +7,7 @@
 
 ### Changed
 - The dotenv option can take a list of file paths or objects, where the object must have a path
-and optionally the `required` and `overwrite` properties.
+and optionally the `required`,`overwrite` or `into` properties.
 
 ## v1.3.0 - 2023-06-14
 

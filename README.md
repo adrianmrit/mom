@@ -280,9 +280,13 @@ properties:
 - `required`: Whether the file is required or not. Defaults to `true`.
 - `overwrite`: Whether the variables defined in the file should overwrite the ones defined in the file. Defaults
 to `false`.
+- `into`: If set, the variables will be loaded with the prefix defined in this property. For example, if the
+`into` property is set to `MY_`, the variable `VAR` defined in the file will be available as `MY_VAR`.
+Can be used together with `overwrite`.
 
 The `required` and `overwrite` properties are particularly useful to allow users to define their own environment
-variables without having to modify the task file.
+variables without having to modify the task file. The `into` property is useful to avoid conflicts between
+environment variables defined in different files.
 
 Examples:
 
@@ -306,6 +310,7 @@ dotenv:
     overwrite: true
   - path: .env.local
     overwrite: true
+    into: MY_
 ```
 
 
@@ -352,9 +357,13 @@ following properties:
 - `required`: Whether the file is required or not. Defaults to `true`.
 - `overwrite`: Whether the variables defined in the file should overwrite the ones defined in the file. Defaults
 to `false`.
+- `into`: If set, the variables will be loaded under the key defined in this property. For example, if the
+`into` property is set to `MY`, the variable `VAR` defined in the file will be available as `{{ vars.MY.VAR }}`.
+Can be used together with `overwrite`.
 
 The `required` and `overwrite` properties are particularly useful to allow users to define their own variables
-without having to modify the task file.
+without having to modify the task file. While the `into` property is useful to load existing configuration files
+under a specific key.
 
 Examples:
 
@@ -378,6 +387,7 @@ vars_file:
     overwrite: true
   - path: vars.local.json
     overwrite: true
+    into: MY
 ```
 
 <a name="incl"></a>

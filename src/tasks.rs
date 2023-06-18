@@ -464,10 +464,10 @@ impl Task {
     /// returns: HashMap<String, String, RandomState>
     fn get_vars(
         &self,
-        env: &HashMap<String, serde_json::Value>,
-    ) -> HashMap<String, serde_json::Value> {
-        let mut new_vars: HashMap<String, serde_json::Value> = self.common.vars.clone();
-        for (key, val) in env {
+        vars: &serde_json::map::Map<String, serde_json::Value>,
+    ) -> serde_json::map::Map<String, serde_json::Value> {
+        let mut new_vars = self.common.vars.clone();
+        for (key, val) in vars {
             new_vars.entry(key.clone()).or_insert_with(|| val.clone());
         }
         new_vars
@@ -533,7 +533,7 @@ impl Task {
         args: &ArgsContext,
         mom_file: &MomFile,
         env: &HashMap<String, String>,
-        vars: &HashMap<String, serde_json::Value>,
+        vars: &serde_json::map::Map<String, serde_json::Value>,
     ) -> tera::Context {
         let mut context = tera::Context::new();
 
