@@ -97,19 +97,23 @@ fn test_working_directory() {
 #[test]
 fn test_split_command() {
     let command = "echo \"Hello World\"";
-    let args = split_command(command);
+    let args = split_command(command).unwrap();
     assert_eq!(args, vec!["echo", "Hello World"]);
 
     let command = "echo \"Hello World\" \"Hello World\"";
-    let args = split_command(command);
+    let args = split_command(command).unwrap();
     assert_eq!(args, vec!["echo", "Hello World", "Hello World"]);
 
+    let command = "echo \"Hello\nWorld\" \"Hello World\"";
+    let args = split_command(command).unwrap();
+    assert_eq!(args, vec!["echo", "Hello\nWorld", "Hello World"]);
+
     let command = "echo Hello\\ World \"Hello \\\"World\"";
-    let args = split_command(command);
+    let args = split_command(command).unwrap();
     assert_eq!(args, vec!["echo", "Hello World", "Hello \"World"]);
 
     let command = "echo Hello \"World\" \"--param\" \"--param=something\"\n";
-    let args = split_command(command);
+    let args = split_command(command).unwrap();
     assert_eq!(
         args,
         vec!["echo", "Hello", "World", "--param", "--param=something"]
@@ -123,28 +127,40 @@ fn test_join_commands() {
         .map(|s| s.to_string())
         .collect();
     let command = join_commands(&commands);
-    assert_eq!(command, "echo \"Hello World\"");
+    assert_eq!(&command, "echo 'Hello World'");
 
-    let commands: Vec<String> = vec!["echo", "Hello World", "Hello World"]
+    let splitted_command = split_command(&command).unwrap();
+    assert_eq!(splitted_command, commands);
+
+    let commands: Vec<String> = vec!["echo", "Hello\nWorld", "Hello World"]
         .iter()
         .map(|s| s.to_string())
         .collect();
     let command = join_commands(&commands);
-    assert_eq!(command, "echo \"Hello World\" \"Hello World\"");
+    assert_eq!(&command, "echo 'Hello\nWorld' 'Hello World'");
+
+    let splitted_command = split_command(&command).unwrap();
+    assert_eq!(splitted_command, commands);
 
     let commands: Vec<String> = vec!["echo", "Hello World", "Hello \"World"]
         .iter()
         .map(|s| s.to_string())
         .collect();
     let command = join_commands(&commands);
-    assert_eq!(command, "echo \"Hello World\" \"Hello \\\"World\"");
+    assert_eq!(&command, "echo 'Hello World' 'Hello \"World'");
+
+    let splitted_command = split_command(&command).unwrap();
+    assert_eq!(splitted_command, commands);
 
     let commands: Vec<String> = vec!["echo", "Hello", "World", "--param", "--param=something"]
         .iter()
         .map(|s| s.to_string())
         .collect();
     let command = join_commands(&commands);
-    assert_eq!(command, "echo Hello World --param --param=something");
+    assert_eq!(&command, "echo Hello World --param --param=something");
+
+    let splitted_command = split_command(&command).unwrap();
+    assert_eq!(splitted_command, commands);
 }
 
 #[test]

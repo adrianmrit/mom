@@ -2,9 +2,9 @@
 #[path = "tera_test.rs"]
 mod tera_test;
 
-use std::{collections::HashMap, io::Write};
+use std::{borrow::Cow, collections::HashMap, io::Write};
 
-use crate::print_utils::MomOutput;
+use crate::{print_utils::MomOutput, utils::join_commands};
 use tera::{Error, Function, Value};
 
 #[cfg(test)]
@@ -175,11 +175,100 @@ fn make_get_env(env: HashMap<String, String>) -> impl Function {
     )
 }
 
+/// Filter for escaping a string or list of strings for use in a shell command.
+fn shell_escape(val: &Value, _: &HashMap<String, Value>) -> Result<Value, Error> {
+    fn escape_str(value: &str) -> String {
+        shell_escape::escape(Cow::Borrowed(value)).into_owned()
+    }
+
+    let err_msg = "escape_shell filter requires a string or array of strings";
+
+    match val {
+        Value::String(value) => Ok(Value::String(escape_str(value))),
+        Value::Array(array) => {
+            let mut result = String::new();
+            for item in array {
+                if let Value::String(value) = item {
+                    result.push_str(&escape_str(value));
+                    result.push(' ');
+                } else {
+                    return Err(Error::msg(err_msg));
+                }
+            }
+            result.pop(); // remove trailing space
+            Ok(Value::String(result))
+        }
+        _ => Err(Error::msg(err_msg)),
+    }
+}
+
+/// Filter for escaping a string or list of strings for use in a shell command.
+fn escape_windows(val: &Value, _: &HashMap<String, Value>) -> Result<Value, Error> {
+    fn escape_str(value: &str) -> String {
+        shell_escape::windows::escape(Cow::Borrowed(value)).into_owned()
+    }
+
+    let err_msg = "escape_shell filter requires a string or array of strings";
+
+    match val {
+        Value::String(value) => Ok(Value::String(escape_str(value))),
+        Value::Array(array) => {
+            let mut result = String::new();
+            for item in array {
+                if let Value::String(value) = item {
+                    result.push_str(&escape_str(value));
+                    result.push(' ');
+                } else {
+                    return Err(Error::msg(err_msg));
+                }
+            }
+            result.pop(); // remove trailing space
+            Ok(Value::String(result))
+        }
+        _ => Err(Error::msg(err_msg)),
+    }
+}
+
+/// Escapes a string or list of strings for internal use in a task.
+fn escape(val: &Value, _: &HashMap<String, Value>) -> Result<Value, Error> {
+    let msg = "quote filter requires a string or array of strings";
+    match val {
+        Value::String(value) => Ok(Value::String(join_commands(&[value]))),
+        Value::Array(array) => {
+            // convert to list of &str
+            let mut result = Vec::new();
+            for item in array {
+                if let Value::String(value) = item {
+                    result.push(value.as_str());
+                } else {
+                    return Err(Error::msg(msg));
+                }
+            }
+            Ok(Value::String(join_commands(&result)))
+        }
+        _ => Err(Error::msg(msg)),
+    }
+}
+
+fn escape_html(val: &Value, _: &HashMap<String, Value>) -> Result<Value, Error> {
+    let msg = "escape_html filter requires a string";
+    match val {
+        Value::String(value) => Ok(Value::String(tera::escape_html(value))),
+        _ => Err(Error::msg(msg)),
+    }
+}
+
 /// Returns a Tera instance with all the filters registered
 /// and ready to be used.
 pub(crate) fn get_tera_instance(env: HashMap<String, String>) -> tera::Tera {
     let mut tera = tera::Tera::default();
+    tera.autoescape_on(vec![]);
     tera.register_filter("exclude", exclude);
+    tera.register_filter("escape_html", escape_html);
+    tera.register_filter("shell_escape_windows", escape_windows);
+    tera.register_filter("shell_escape_unix", escape);
+    tera.register_filter("escape", escape);
+    tera.register_filter("shell_escape", shell_escape);
     tera.register_function("input", input);
     tera.register_function("password", password);
     tera.register_function("get_env", make_get_env(env));

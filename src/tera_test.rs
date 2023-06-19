@@ -120,3 +120,94 @@ fn test_get_env() {
         .unwrap();
     assert_eq!(result, env_var_value);
 }
+
+#[test]
+#[cfg(windows)]
+fn test_shell_escape_filter() {
+    let mut tera = get_tera_instance(HashMap::new());
+
+    let result = tera
+        .render_str(r#"{{ "test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "test");
+
+    let result = tera
+        .render_str(r#"{{ "test test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "\"test test\"");
+
+    let result = tera
+        .render_str(r#"{{ "test'test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "test'test");
+
+    let result = tera
+        .render_str(r#"{{ 'test"test' | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "\"test\\\"test\"");
+
+    let result = tera
+        .render_str(
+            r#"{{ ["test", "test test", "test'test", 'test"test'] | shell_escape }}"#,
+            &tera::Context::new(),
+        )
+        .unwrap();
+    assert_eq!(result, "test \"test test\" test'test \"test\\\"test\"");
+}
+
+#[test]
+#[cfg(unix)]
+fn test_shell_escape_filter() {
+    let mut tera = get_tera_instance(HashMap::new());
+
+    let result = tera
+        .render_str(r#"{{ "test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "test");
+
+    let result = tera
+        .render_str(r#"{{ "test test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "'test test'");
+
+    let result = tera
+        .render_str(r#"{{ "test'test" | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "'test'\\''test'");
+
+    let result = tera
+        .render_str(r#"{{ 'test"test' | shell_escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "'test\"test'");
+
+    let result = tera
+        .render_str(
+            r#"{{ ["test", "test test", "test'test", 'test"test'] | shell_escape }}"#,
+            &tera::Context::new(),
+        )
+        .unwrap();
+    assert_eq!(result, "test 'test test' 'test'\\''test' 'test\"test'");
+}
+
+#[test]
+fn test_escape_filter() {
+    let mut tera = get_tera_instance(HashMap::new());
+
+    let result = tera
+        .render_str(r#"{{ "test" | escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "test");
+
+    let result = tera
+        .render_str(r#"{{ "test test" | escape }}"#, &tera::Context::new())
+        .unwrap();
+    assert_eq!(result, "'test test'");
+
+    let result = tera
+        .render_str(
+            r#"{{ ["test", "test test"] | shell_escape_unix }}"#,
+            &tera::Context::new(),
+        )
+        .unwrap();
+    assert_eq!(result, "test 'test test'");
+}

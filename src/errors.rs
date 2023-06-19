@@ -8,16 +8,22 @@ use std::fmt;
 /// Represents an error that can occur in a task
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum TaskError {
+    /// Raised when there is an error parsing a task
+    ParseError(String),
     /// Raised when there is an error running a task
     RuntimeError(String),
     /// Raised when the task is improperly configured
     ConfigError(String),
+    /// Raised when a task is not found
     NotFound(String),
 }
 
 impl fmt::Display for TaskError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            TaskError::ParseError(ref reason) => {
+                write!(f, "Parse error:\n{}", reason)
+            }
             TaskError::RuntimeError(ref reason) => {
                 write!(f, "Runtime error:\n{}", reason)
             }
@@ -56,6 +62,12 @@ impl From<std::io::Error> for TaskError {
 impl From<AwareTaskError> for TaskError {
     fn from(err: AwareTaskError) -> TaskError {
         TaskError::RuntimeError(err.to_string())
+    }
+}
+
+impl From<shell_words::ParseError> for TaskError {
+    fn from(err: shell_words::ParseError) -> TaskError {
+        TaskError::ParseError(err.to_string())
     }
 }
 

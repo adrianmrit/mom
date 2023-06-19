@@ -260,62 +260,23 @@ pub(crate) fn read_vars_file<S: AsRef<OsStr> + ?Sized>(
     }
 }
 
-/// Split a command into its arguments. This is a very simple implementation
-/// but it should be enough for most cases.
-pub(crate) fn split_command(val: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut current = String::new();
-    let mut in_quotes = false;
-    let mut escaped = false;
-    for c in val.chars() {
-        if escaped {
-            current.push(c);
-            escaped = false;
-            continue;
-        }
-        let is_space_like = c == ' ' || c == '\t' || c == '\n' || c == '\r';
-        match c {
-            '\\' => escaped = true,
-            '"' => in_quotes = !in_quotes,
-            _ if !in_quotes && is_space_like => {
-                if !current.is_empty() {
-                    result.push(current.clone());
-                    current.clear();
-                }
-            }
-            _ => current.push(c),
-        }
-    }
-
-    // TODO: Return error if in_quotes is true
-
-    if !current.is_empty() {
-        result.push(current);
-    }
-    result
+/// Split a command into a list of commands.
+pub(crate) fn split_command(val: &str) -> Result<Vec<String>, shell_words::ParseError> {
+    shell_words::split(val)
 }
 
-// Joins the commands, quoting those with spaces and escaping quotes and backslashes.
+/// Join a list of command components into a single string. Escapes each command component if necessary.
 pub(crate) fn join_commands(commands: &[impl AsRef<str>]) -> String {
     let mut result = String::new();
-    for (i, command) in commands.iter().enumerate() {
-        if i > 0 {
-            result.push(' ');
-        }
-        if command.as_ref().contains(' ') {
-            result.push('"');
-            for c in command.as_ref().chars() {
-                match c {
-                    '"' | '\\' => {
-                        result.push('\\');
-                        result.push(c);
-                    }
-                    _ => result.push(c),
-                }
+    for command in commands.iter() {
+        let command = Cow::Borrowed(command.as_ref());
+        let escaped = shell_escape::unix::escape(command);
+        let escaped = escaped.to_string();
+        if !escaped.is_empty() {
+            if !result.is_empty() {
+                result.push(' ');
             }
-            result.push('"');
-        } else {
-            result.push_str(command.as_ref());
+            result.push_str(&escaped);
         }
     }
     result

@@ -642,7 +642,7 @@ impl Task {
                 let template_name = format!("tasks.{task_name}.args");
                 tera_instance.add_raw_template(&template_name, args)?;
                 let rendered_args = tera_instance.render(&template_name, tera_context)?;
-                split_command(&rendered_args)
+                split_command(&rendered_args)?
             }
         };
         if args_list.is_empty() {
@@ -680,7 +680,7 @@ impl Task {
 
         let cmd = tera_instance.render(template_name, tera_context);
         let cmd = cmd?;
-        let cmd_args = split_command(&cmd);
+        let cmd_args = split_command(&cmd)?;
         let cmd_args: Vec<Cow<str>> = expand_args(&cmd_args, env);
         let cmd_args: Vec<&str> = cmd_args.iter().map(|s| s.as_ref()).collect();
         let program = match cmd_args.first() {
@@ -869,7 +869,7 @@ impl Task {
         tera_instance.add_raw_template(&script_runner_template_name, script_runner)?;
 
         let script_runner = tera_instance.render(&script_runner_template_name, tera_context)?;
-        let script_runner_values = split_command(&script_runner);
+        let script_runner_values = split_command(&script_runner)?;
         let script_runner_values = expand_args(&script_runner_values, env);
         let script_runner_values: Vec<&str> =
             script_runner_values.iter().map(|s| s.as_ref()).collect();

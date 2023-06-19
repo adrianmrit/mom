@@ -3,11 +3,15 @@
 ## Unreleased
 
 ### Added
-- Added `vars_file` option to load json, yaml, toml or .env files as variables
+- Added `vars_file` option to load json, yaml, toml or .env files as variables.
+- Added `escape` (replacing default `escape` filter), `shell_escape`, `shell_escape_unix`, `shell_escape_windows`
+and `escape_html` tera filters.
 
 ### Changed
 - The dotenv option can take a list of file paths or objects, where the object must have a path
 and optionally the `required`,`overwrite` or `into` properties.
+- Disabled auto-escaping in tera templates.
+- Arguments in `cmds` and `args` are now parsed following unix shell rules.
 
 ## v1.3.0 - 2023-06-14
 

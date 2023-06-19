@@ -48,6 +48,11 @@
   * [Tera template engine](#tera-template-engine)
     * [Mom filters](#mom-filters)
       * [exclude](#exclude)
+      * [escape](#escape)
+      * [shell_escape](#shell_escape)
+      * [shell_escape_unix](#shell_escape_unix)
+      * [shell_escape_windows](#shell_escape_windows)
+      * [escape_html](#escape_html)
     * [Mom functions](#mom-functions)
       * [input](#input)
       * [password](#password)
@@ -159,7 +164,7 @@ tasks:
   
   sum:
     cmds:
-      - echo "{{ args.0 }} + {{ args.1 }} = {{ args.0 | int + args.1 | int }}"
+      - echo {{ args.0 }} + {{ args.1 }} = {{ args.0 | int + args.1 | int }}
   
   swear:
     condition: |
@@ -230,6 +235,7 @@ precedence over the value defined in the file.
 - [env](#env): Environment variables.
 - [dotenv](#dotenv): File or list of files containing environment variables.
 - [vars](#vars): Variables.
+- [vars_file](#vars_file): File or list of files containing variables.
 - [incl](#incl): Templates that can be included/imported in the Tera template engine.
 
 
@@ -737,13 +743,16 @@ Named arguments are also treated as positional arguments, i.e. if `--name John -
 `{{ args.0 }}` will be `--name`, `{{ args.1 }}` will be `John`, and `{{ args.2 }}` will be `--surname="Doe"`.
 Thus, it is recommended to pass positional arguments first.
 
-In you want to pass all the command line arguments, you can use `{{ args | join(sep=" ") }}`, or `{% for arg in args %} "{{ arg }}" {% %}`
-if you want to quote them.
+Arguments are not auto escaped. If you want to safely pass all the command line arguments, you can use the [escape](#escape)
+or [shell_escape](#shell_escape) filters, i.e. `{{ args | escape }}`, or `{{ args | shell_escape }}`.
+Note that these will merge the arguments into a single string.
 
 See also:
   - [Tera template engine](#tera-template-engine)
   - [custom filters](#mom-filters)
-  - [functions](#mom-functions).
+  - [escape](#escape)
+  - [shell_escape](#shell_escape)
+  - [functions](#mom-functions)
 
 
 <a name="env-and-vars-inheritance"></a>
@@ -775,8 +784,8 @@ tasks:
       VAR2: "test1_var2"
       VAR3: "test1_var3"
     cmds:
-      - echo "{{ env.ENV1 }} {{ env.ENV2 }} {{ env.ENV3 }}"
-      - echo "{{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}"
+      - echo {{ env.ENV1 }} {{ env.ENV2 }} {{ env.ENV3 }}
+      - echo {{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}
       
       # env and vars from the parent will take precedence
       - task: test2
@@ -801,8 +810,8 @@ tasks:
       VAR2: "test2_var2"
       VAR3: "test2_var3"
     cmds:
-      - echo "{{ env.VAR1 }} {{ env.VAR2 }} {{ env.VAR3 }}"
-      - echo "{{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}"
+      - echo {{ env.VAR1 }} {{ env.VAR2 }} {{ env.VAR3 }}
+      - echo {{ vars.VAR1 }} {{ vars.VAR2 }} {{ vars.VAR3 }}
 ```
 
 The output will be (excluding debug output):
@@ -899,8 +908,83 @@ Example:
   ```
 
 
+<a name="escape"></a>
+##### escape
+
+Replaces the default `escape` filter from Tera, which escapes HTML. If you want to escape HTML, use
+the [html_escape](#html_escape) filter instead.
+
+This filter escapes the strings or list of strings provided according to parsing rules of the
+Unix shell. The result is the escaped string, or a string containing the escaped strings separated
+by spaces.
+
+This filter is useful when working with the [cmds](#cmds) or [args](#args) properties, since they
+follow the same rules as the Unix shell, regardless of the platform. However for the [script](#script)
+property, which by default uses the platform's shell, it is recommended to use the [shell_escape](#shell_escape)
+filter.
+
+Example:
+  ```yaml
+  tasks:
+    test:
+      cmds:
+        - echo {{ 'testing' | escape }} {{ args | escape }}
+  ```
+  Output:
+  ```console
+  $ mom --dry test "test1 test2" test3
+  test.cmds.0: echo testing 'test1 test2' test3
+  ```
+
+
+<a name="shell_escape"></a>
+##### shell_escape
+
+Like the [escape](#escape) filter, but performs escaping according to the platform's shell (Unix or Windows).
+If the platform is not detected, Unix escaping is used.
+
+This filter is useful when working with the [script](#script) property, since it uses the platform's
+shell by default. However, for the [cmds](#cmds) or [args](#args) properties, it is recommended to use
+the [escape](#escape) filter, since they follow the same rules as the Unix shell, regardless of the platform.
+
+
+Example:
+  ```yaml
+  tasks:
+    test:
+      cmds:
+        - echo {{ 'testing' | shell_escape }} {{ args | shell_escape }}
+  ```
+  
+  Output (Unix):
+  ```console
+  $ mom --dry test 'test1 test2' test3
+  test.cmds.0: echo testing 'test1 test2' test3
+  ```
+
+
+<a name="shell_escape_unix"></a>
+##### shell_escape_unix
+
+Like the [shell_escape](#shell_escape) filter, but performs escaping according to the Unix shell.
+This is equivalent to the [escape](#escape) filter.
+
+
+<a name="shell_escape_windows"></a>
+##### shell_escape_windows
+
+Like the [shell_escape](#shell_escape) filter, but performs escaping according to the Windows shell.
+
+
+<a name="escape_html"></a>
+##### escape_html
+
+Escapes HTML. This is equivalent to the default `escape` filter from Tera.
+
+
 <a name="mom-functions"></a>
 #### Mom functions
+
 
 <a name="input"></a>
 ##### input

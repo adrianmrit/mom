@@ -553,9 +553,9 @@ tasks:
             # Env should inherit from test1 and test2 and take precedence over the child env
             VAR1: VAL1.3
         cmds:
-            - "echo VAR1: {{ env.VAR1 }}"
-            - "echo VAR2: {{ env.VAR2 }}"
-            - "echo VAR3: {{ env.VAR3 }}"
+            - "echo 'VAR1: {{ env.VAR1 }}'"
+            - "echo 'VAR2: {{ env.VAR2 }}'"
+            - "echo 'VAR3: {{ env.VAR3 }}'"
             - task: test4
             - task:
                 # Because we used bases, the env should be inherited from test4, not test3
@@ -572,10 +572,10 @@ tasks:
             VAR3: VAL3.4
             VAR4: VAL4
         cmds:
-            - "echo VAR1: {{ env.VAR1 }}"
-            - "echo VAR2: {{ env.VAR2 }}"
-            - "echo VAR3: {{ env.VAR3 }}"
-            - "echo VAR4: {{ env.VAR4 }}"
+            - "echo 'VAR1: {{ env.VAR1 }}'"
+            - "echo 'VAR2: {{ env.VAR2 }}'"
+            - "echo 'VAR3: {{ env.VAR3 }}'"
+            - "echo 'VAR4: {{ env.VAR4 }}'"
     "#
         .as_bytes(),
     )?;
@@ -586,27 +586,27 @@ tasks:
     cmd.arg("test3");
     cmd.assert().success().stdout(predicate::str::contains(
         format!(
-            r#"test3.cmds.0: echo VAR1: VAL1.3
+            r#"test3.cmds.0: echo 'VAR1: VAL1.3'
 {DRY_RUN_MESSAGE}
-test3.cmds.1: echo VAR2: VAL2.2
+test3.cmds.1: echo 'VAR2: VAL2.2'
 {DRY_RUN_MESSAGE}
-test3.cmds.2: echo VAR3: VAL3
+test3.cmds.2: echo 'VAR3: VAL3'
 {DRY_RUN_MESSAGE}
-test3.cmds.3.test4.cmds.0: echo VAR1: VAL1.3
+test3.cmds.3.test4.cmds.0: echo 'VAR1: VAL1.3'
 {DRY_RUN_MESSAGE}
-test3.cmds.3.test4.cmds.1: echo VAR2: VAL2.2
+test3.cmds.3.test4.cmds.1: echo 'VAR2: VAL2.2'
 {DRY_RUN_MESSAGE}
-test3.cmds.3.test4.cmds.2: echo VAR3: VAL3.4
+test3.cmds.3.test4.cmds.2: echo 'VAR3: VAL3.4'
 {DRY_RUN_MESSAGE}
-test3.cmds.3.test4.cmds.3: echo VAR4: VAL4
+test3.cmds.3.test4.cmds.3: echo 'VAR4: VAL4'
 {DRY_RUN_MESSAGE}
-test3.cmds.4.cmds.0: echo VAR1: VAL1.4
+test3.cmds.4.cmds.0: echo 'VAR1: VAL1.4'
 {DRY_RUN_MESSAGE}
-test3.cmds.4.cmds.1: echo VAR2: VAL2.4
+test3.cmds.4.cmds.1: echo 'VAR2: VAL2.4'
 {DRY_RUN_MESSAGE}
-test3.cmds.4.cmds.2: echo VAR3: VAL3.4
+test3.cmds.4.cmds.2: echo 'VAR3: VAL3.4'
 {DRY_RUN_MESSAGE}
-test3.cmds.4.cmds.3: echo VAR4: VAL4.3
+test3.cmds.4.cmds.3: echo 'VAR4: VAL4.3'
 {DRY_RUN_MESSAGE}
 "#
         )
@@ -737,8 +737,8 @@ tasks:
             # override var3 from root.vars, applies to children
             var3: [4, 5, 6]
         cmds:
-            - "echo var1: {{ vars.var1 }}"
-            - "echo var2: {{ vars.var2 }}"
+            - "echo 'var1: {{ vars.var1 }}'"
+            - "echo \"var2: {{ vars.var2 }}\""
             - "echo var3: {{ vars.var3[0] }} {{ vars.var3[1] }} {{ vars.var3[2] }}"
             - "echo user: {{ vars.user.name }} {{ vars.user.age }}"
             - task:
@@ -768,23 +768,23 @@ tasks:
     cmd.arg("test");
     cmd.assert().success().stdout(predicate::str::contains(
         format!(
-            r#"test.cmds.0: echo var1: val1
+            r#"test.cmds.0: echo 'var1: val1'
 {DRY_RUN_MESSAGE}
-test.cmds.1: echo var2: val2.1
+test.cmds.1: echo 'var2: val2.1'
 {DRY_RUN_MESSAGE}
-test.cmds.2: echo var3: 4 5 6
+test.cmds.2: echo 'var3:' 4 5 6
 {DRY_RUN_MESSAGE}
-test.cmds.3: echo user: user1 18
+test.cmds.3: echo 'user:' user1 18
 {DRY_RUN_MESSAGE}
-test.cmds.4.cmds.0: echo var1: val1.1
+test.cmds.4.cmds.0: echo 'var1:' val1.1
 {DRY_RUN_MESSAGE}
-test.cmds.4.cmds.1: echo var2: val2.1
+test.cmds.4.cmds.1: echo 'var2:' val2.1
 {DRY_RUN_MESSAGE}
-test.cmds.4.cmds.2: echo var3: 4 5 6
+test.cmds.4.cmds.2: echo 'var3:' 4 5 6
 {DRY_RUN_MESSAGE}
-test.cmds.4.cmds.3: echo user: user1 18
+test.cmds.4.cmds.3: echo 'user:' user1 18
 {DRY_RUN_MESSAGE}
-test.cmds.5.other-test.cmds.0: echo var2: val2.1
+test.cmds.5.other-test.cmds.0: echo 'var2:' val2.1
 {DRY_RUN_MESSAGE}
 "#
         )
@@ -796,7 +796,7 @@ test.cmds.5.other-test.cmds.0: echo var2: val2.1
     cmd.arg("--dry");
     cmd.arg("other-test");
     cmd.assert().success().stdout(predicate::str::contains(
-        "other-test.cmds.0: echo var2: val2.2",
+        "other-test.cmds.0: echo 'var2:' val2.2",
     ));
     Ok(())
 }
@@ -885,7 +885,7 @@ tasks:
     cmd.assert().success().stdout(predicate::str::contains(
         format!(
             r#"run.cmds.0.task1 skipped
-run.cmds.1.task2.cmds.0: echo "task2 executed"
+run.cmds.1.task2.cmds.0: echo 'task2 executed'
 {DRY_RUN_MESSAGE}
 "#
         )
@@ -919,8 +919,34 @@ tasks:
     cmd.assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            r#"test.cmds.0: echo "hello world"
+            r#"test.cmds.0: echo 'hello world'
 hello world
 "#
         )));
+}
+
+#[test]
+fn test_cmd_args_parse_error() {
+    let tmp_dir = TempDir::new().unwrap();
+
+    let mut file = File::create(tmp_dir.join("mom.root.yml")).unwrap();
+    file.write_all(
+        r#"
+version: 1
+
+tasks:
+    test:
+        cmds:
+            - echo "hello world
+"#
+        .as_bytes(),
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("mom").unwrap();
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("test");
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("missing closing quote"));
 }

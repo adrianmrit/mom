@@ -36,6 +36,8 @@ md-5 = "0.10"  # Used for caching
 tera = "1.18" # Used for templating
 shellexpand = "3.1"
 rpassword = "7.2"
+shell-escape = "0.1"
+shell-words = "1.0.0"
 
 [dev-dependencies]
 assert_cmd = "2.0"
