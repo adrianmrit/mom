@@ -5,7 +5,7 @@
     "type": "object",
     "additionalProperties": false,
     "$defs": {
-        "v2": {
+        "v1": {
             "env": {
                 "description": "Environment variables to set when running a task",
                 "type": "object",
@@ -17,6 +17,48 @@
                 "description": "Variables that can be accessed from the task",
                 "type": "object"
             },
+            "vars_file_obj": {
+                "description": "File or files to load variables from",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "path": {
+                        "description": "The path to the file",
+                        "type": "string"
+                    },
+                    "required": {
+                        "description": "Fail if the file does not exist",
+                        "type": "boolean"
+                    },
+                    "overwrite": {
+                        "description": "Overwrite existing variables",
+                        "type": "boolean"
+                    },
+                    "into": {
+                        "description": "Namespace",
+                        "type": "string"
+                    }
+                }
+            },
+            "vars_file": {
+                "description": "File or files to load variables from",
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "$ref": "#/$defs/v1/vars_file_obj"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
             "dotenv": {
                 "description": "File or files to load environment variables from",
                 "oneOf": [
@@ -26,7 +68,12 @@
                     {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "$ref": "#/$defs/v1/vars_file_obj"
+                                }
+                            ]
                         }
                     }
                 ]
@@ -55,7 +102,7 @@
                 "type": "object",
                 "properties": {
                     "task": {
-                        "$ref": "#/$defs/v2/task"
+                        "$ref": "#/$defs/v1/task"
                     }
                 }
             },
@@ -82,7 +129,7 @@
                             "type": "string"
                         },
                         "incl": {
-                            "$ref": "#/$defs/v2/incl"
+                            "$ref": "#/$defs/v1/incl"
                         },
                         "script": {
                             "description": "The script to run for the task",
@@ -101,13 +148,13 @@
                             "type": "string"
                         },
                         "args": {
-                            "$ref": "#/$defs/v2/args"
+                            "$ref": "#/$defs/v1/args"
                         },
                         "args_extend": {
-                            "$ref": "#/$defs/v2/args_extend"
+                            "$ref": "#/$defs/v1/args_extend"
                         },
                         "args+": {
-                            "$ref": "#/$defs/v2/args"
+                            "$ref": "#/$defs/v1/args"
                         },
                         "cmds": {
                             "description": "List of commands to run",
@@ -118,37 +165,40 @@
                                         "type": "string"
                                     },
                                     {
-                                        "$ref": "#/$defs/v2/cmd_task"
+                                        "$ref": "#/$defs/v1/cmd_task"
                                     },
                                     {
-                                        "$ref": "#/$defs/v2/cmd_task_name"
+                                        "$ref": "#/$defs/v1/cmd_task_name"
                                     }
                                 ]
                             }
                         },
                         "env": {
-                            "$ref": "#/$defs/v2/env"
+                            "$ref": "#/$defs/v1/env"
                         },
                         "dotenv": {
-                            "$ref": "#/$defs/v2/dotenv"
+                            "$ref": "#/$defs/v1/dotenv"
                         },
                         "vars": {
-                            "$ref": "#/$defs/v2/vars"
+                            "$ref": "#/$defs/v1/vars"
+                        },
+                        "vars_file": {
+                            "$ref": "#/$defs/v1/vars_file"
                         },
                         "wd": {
-                            "$ref": "#/$defs/v2/wd"
+                            "$ref": "#/$defs/v1/wd"
                         },
                         "linux": {
                             "description": "Task to run on Linux",
-                            "$ref": "#/$defs/v2/task"
+                            "$ref": "#/$defs/v1/task"
                         },
                         "windows": {
                             "description": "Task to run on Windows",
-                            "$ref": "#/$defs/v2/task"
+                            "$ref": "#/$defs/v1/task"
                         },
                         "macos": {
                             "description": "Task to run on MacOS",
-                            "$ref": "#/$defs/v2/task"
+                            "$ref": "#/$defs/v1/task"
                         },
                         "extend": {
                             "description": "The tasks that this task inherits from",
@@ -175,7 +225,7 @@
                 "type": "object",
                 "patternProperties": {
                     "^[_a-zA-Z][a-zA-Z0-9_-]*(\\.(windows|linux|macos))?$": {
-                        "$ref": "#/$defs/v2/task"
+                        "$ref": "#/$defs/v1/task"
                     }
                 }
             }
@@ -210,22 +260,25 @@
             ]
         },
         "incl": {
-            "$ref": "#/$defs/v2/incl"
+            "$ref": "#/$defs/v1/incl"
         },
         "wd": {
-            "$ref": "#/$defs/v2/wd"
+            "$ref": "#/$defs/v1/wd"
         },
         "env": {
-            "$ref": "#/$defs/v2/env"
+            "$ref": "#/$defs/v1/env"
         },
         "dotenv": {
-            "$ref": "#/$defs/v2/dotenv"
+            "$ref": "#/$defs/v1/dotenv"
         },
         "vars": {
-            "$ref": "#/$defs/v2/vars"
+            "$ref": "#/$defs/v1/vars"
+        },
+        "vars_file": {
+            "$ref": "#/$defs/v1/vars_file"
         },
         "tasks": {
-            "$ref": "#/$defs/v2/mom_file_tasks"
+            "$ref": "#/$defs/v1/mom_file_tasks"
         }
     },
     "required": ["version"]
